@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-debug-61:\\xml_network_security_config.xml.flat",
+        "source": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-main-63:\\xml\\network_security_config.xml"
+    },
+    {
+        "merged": "mx.com.getic.encuestasoxxo.app-debug-61:/xml_network_security_config.xml.flat",
+        "source": "mx.com.getic.encuestasoxxo.app-main-63:/xml/network_security_config.xml"
+    }
+]
