@@ -13,6 +13,7 @@ import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
 import java.lang.Class;
 import java.lang.Exception;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -24,6 +25,7 @@ import java.util.concurrent.Callable;
 import javax.annotation.processing.Generated;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import kotlinx.coroutines.flow.Flow;
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity;
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity;
 
@@ -247,6 +249,37 @@ public final class EncuestaDao_Impl implements EncuestaDao {
         }
       }
     }, $completion);
+  }
+
+  @Override
+  public Flow<Integer> contarPendientes() {
+    final String _sql = "SELECT COUNT(*) FROM encuesta WHERE sincronizado = 0";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    return CoroutinesRoom.createFlow(__db, false, new String[] {"encuesta"}, new Callable<Integer>() {
+      @Override
+      @NonNull
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final int _tmp;
+            _tmp = _cursor.getInt(0);
+            _result = _tmp;
+          } else {
+            _result = 0;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+        }
+      }
+
+      @Override
+      protected void finalize() {
+        _statement.release();
+      }
+    });
   }
 
   @Override

@@ -22,7 +22,8 @@ data class UsuarioDto(
     val gestiona_preguntas: Boolean,
     val gestiona_usuarios: Boolean,
     val es_encuestable: Boolean,
-    val ve_resultados_tiendas: Boolean
+    val ve_resultados_tiendas: Boolean,
+    val debe_cambiar_password: Boolean? = false
 )
 
 data class ErrorResponse(

@@ -1,0 +1,14 @@
+RewriteEngine On
+RewriteBase /nps/
+
+# 1. Recursos estáticos (Imágenes, CSS, JS)
+# Si pides algo de estas carpetas, búscalo dentro de /public
+RewriteRule ^(uploads/.*|css/.*|js/.*)$ public/$1 [L]
+
+# 2. API
+RewriteRule ^api/(.*)$ public/api/index.php [QSA,L]
+
+# 3. Panel Web (Cualquier otra cosa que no sea un archivo real)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/index.php [QSA,L]

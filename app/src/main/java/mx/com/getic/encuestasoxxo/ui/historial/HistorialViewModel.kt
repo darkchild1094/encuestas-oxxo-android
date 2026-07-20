@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.remote.dto.RespuestaFilaDto
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 
@@ -24,7 +25,10 @@ data class HistorialUiState(
     val error: String? = null,
 )
 
-class HistorialViewModel(private val repository: EncuestaRepository) : ViewModel() {
+class HistorialViewModel(
+    private val repository: EncuestaRepository,
+    private val sessionManager: SessionManager,
+) : ViewModel() {
     var estado by mutableStateOf(HistorialUiState())
         private set
 

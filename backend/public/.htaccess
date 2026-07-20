@@ -1,0 +1,2 @@
+RewriteEngine On
+# El control lo tiene el .htaccess de la raiz

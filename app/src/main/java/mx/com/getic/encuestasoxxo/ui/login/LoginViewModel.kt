@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.ResultadoLogin
 
@@ -16,7 +17,10 @@ data class LoginUiState(
     val error: String? = null,
 )
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository,
+    private val sessionManager: SessionManager,
+) : ViewModel() {
     var estado by mutableStateOf(LoginUiState())
         private set
 
@@ -30,7 +34,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     // onExito recibe el rol para que la navegacion decida a que
     // pantalla mandar al usuario (mismo criterio que el panel web).
-    fun login(onExito: (rol: String) -> Unit) {
+    fun login(onExito: (rol: String, debeCambiar: Boolean) -> Unit) {
         if (estado.correo.isBlank() || estado.password.isBlank()) {
             estado = estado.copy(error = "Pon tu correo y password.")
             return
@@ -40,7 +44,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
             when (val resultado = authRepository.login(estado.correo.trim(), estado.password)) {
                 is ResultadoLogin.Ok -> {
                     estado = estado.copy(cargando = false)
-                    onExito(resultado.rol)
+                    onExito(resultado.rol, resultado.debeCambiarPassword)
                 }
                 is ResultadoLogin.Error -> {
                     estado = estado.copy(cargando = false, error = resultado.mensaje)

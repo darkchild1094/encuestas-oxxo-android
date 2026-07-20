@@ -17,7 +17,7 @@ android {
         // Cambia esto por la URL real de tu servidor (el mismo host
         // donde corre /api de encuestas_web). En emulador Android,
         // 10.0.2.2 apunta al localhost de tu PC.
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.2/nps/api/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://fieldserviceplus.alwaysdata.net/nps/api/\"")
     }
 
     buildTypes {
@@ -76,6 +76,12 @@ dependencies {
 
     // Coil (foto de perfil)
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Timber (logging)
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Coroutines (ya incluído por otras dependencias, pero explícito)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

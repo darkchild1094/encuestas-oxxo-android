@@ -1,6 +1,7 @@
 package mx.com.getic.encuestasoxxo.data.local.dao
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
 
@@ -20,6 +21,9 @@ interface EncuestaDao {
 
     @Query("UPDATE encuesta SET sincronizado = 1 WHERE id = :encuestaId")
     suspend fun marcarSincronizada(encuestaId: String)
+
+    @Query("SELECT COUNT(*) FROM encuesta WHERE sincronizado = 0")
+    fun contarPendientes(): Flow<Int>
 
     // Para el historial que ve el ATI dentro de la app (version simple;
     // el detalle filtrado/exportable vive en el panel web).

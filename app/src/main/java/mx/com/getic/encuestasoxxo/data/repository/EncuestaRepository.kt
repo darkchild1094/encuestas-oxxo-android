@@ -1,5 +1,6 @@
 package mx.com.getic.encuestasoxxo.data.repository
 
+import kotlinx.coroutines.flow.Flow
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.local.dao.CuestionarioDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
@@ -9,8 +10,18 @@ import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
 import mx.com.getic.encuestasoxxo.data.remote.dto.*
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
+
+/**
+ * Resultado de obtenerPreguntas que incluye flag indicando si los datos vienen del cache
+ */
+data class PreguntasResult(
+    val cuestionario: CuestionarioEntity,
+    val preguntas: List<PreguntaEntity>,
+    val esCacheado: Boolean = false,
+)
 
 class EncuestaRepository(
     private val api: ApiService,
@@ -31,8 +42,9 @@ class EncuestaRepository(
     // --- Cuestionario: se refresca de red y se cachea en Room para
     // poder re-contestar en la misma tienda aunque se caiga la señal
     // a medio checklist. ---
-    suspend fun obtenerPreguntas(plazaId: Int): Pair<CuestionarioEntity, List<PreguntaEntity>>? {
+    suspend fun obtenerPreguntas(plazaId: Int): PreguntasResult? {
         try {
+            Timber.d("Obteniendo preguntas de plaza $plazaId desde servidor")
             val respuesta = api.obtenerCuestionario(token(), plazaId)
             val cuestionarioDto = respuesta.cuestionario ?: return null
 
@@ -43,12 +55,18 @@ class EncuestaRepository(
                 PreguntaEntity(it.id, cuestionario.id, it.texto, it.orden)
             }
             cuestionarioDao.guardarPreguntas(preguntas)
-            return cuestionario to preguntas
+            Timber.d("Preguntas cargadas exitosamente: ${preguntas.size} items")
+            return PreguntasResult(cuestionario, preguntas, esCacheado = false)
         } catch (e: Exception) {
             // Sin señal: usa lo que ya este cacheado localmente de una
             // visita anterior a esta plaza, si existe.
+            Timber.w(e, "Error obteniendo preguntas, intentando desde cache")
             val cache = cuestionarioDao.obtenerPorPlaza(plazaId) ?: return null
-            return cache to cuestionarioDao.obtenerPreguntas(cache.id)
+            return PreguntasResult(
+                cache,
+                cuestionarioDao.obtenerPreguntas(cache.id),
+                esCacheado = true  // Indicar que son datos cacheados
+            )
         }
     }
 
@@ -86,6 +104,8 @@ class EncuestaRepository(
         }
         encuestaDao.guardarRespuestas(respuestas)
 
+        Timber.d("Encuesta guardada: $encuestaId con ${respuestas.size} respuestas")
+
         // Intento inmediato -- si hay señal, ya se sube sin esperar al
         // WorkManager. Si falla (sin señal), no pasa nada: se queda
         // marcada sincronizado=false y el Worker la reintenta despues.
@@ -97,6 +117,7 @@ class EncuestaRepository(
         if (pendientes.isEmpty()) return true
 
         return try {
+            Timber.d("Sincronizando ${pendientes.size} encuestas pendientes")
             val dto = pendientes.map { e ->
                 EncuestaSyncDto(
                     id = e.id,
@@ -111,13 +132,39 @@ class EncuestaRepository(
             }
             val respuesta = api.subirEncuestas(token(), SubirEncuestasRequest(dto))
             respuesta.sincronizadas.forEach { encuestaDao.marcarSincronizada(it) }
+            Timber.d("Sincronización exitosa: ${respuesta.sincronizadas.size} encuestas")
             true
         } catch (e: Exception) {
+            Timber.e(e, "Error sincronizando encuestas")
             false
         }
     }
 
+    // Observar cantidad de encuestas pendientes de sincronizar
+    fun contarPendientes(): Flow<Int> = encuestaDao.contarPendientes()
+
     // Historial para el ATI -- ya viene filtrado por el servidor a
     // solo las tiendas donde el es el asesor TI asignado.
     suspend fun obtenerRespuestas(): List<RespuestaFilaDto> = api.respuestas(token())
+
+    // --- Gestion de Preguntas (ATI / Webmaster) ---
+    suspend fun crearPregunta(cuestionarioId: Int, texto: String, orden: Int) {
+        api.crearPregunta(token(), CrearPreguntaRequest(
+            cuestionario_id = cuestionarioId,
+            texto = texto,
+            orden = orden
+        ))
+    }
+
+    suspend fun editarPregunta(id: Int, texto: String, orden: Int) {
+        api.editarPregunta(token(), EditarPreguntaRequest(
+            id = id,
+            texto = texto,
+            orden = orden
+        ))
+    }
+
+    suspend fun eliminarPregunta(id: Int) {
+        api.eliminarPregunta(token(), id)
+    }
 }

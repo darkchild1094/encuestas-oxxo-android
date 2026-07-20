@@ -34,6 +34,8 @@ data class EncuestaUiState(
     val cargandoPreguntas: Boolean = false,
     val enviando: Boolean = false,
     val enviadoOk: Boolean = false,
+    val datosEnCache: Boolean = false,
+    val encuestasPendientes: Int = 0,
     val error: String? = null,
 )
 
@@ -46,13 +48,26 @@ class EncuestaViewModel(
 
     init {
         val plazaAsignada = sesion.plazaId
-        if (plazaAsignada != null) {
-            // Ya sabemos su plaza -- nos brincamos negocio/region/plaza
-            // por completo y vamos directo a tiendas de esa plaza.
-            estado = estado.copy(plazaFija = true, plazaId = plazaAsignada, cargandoCatalogo = false)
-            cargarTiendas(plazaAsignada)
+        val esAdminOAti = sesion.rol == "ATI" || sesion.rol == "WEBMASTER"
+
+        if (plazaAsignada != null || esAdminOAti) {
+            // Para ATI y Webmaster (o cualquiera con plaza fija), forzamos su plaza
+            // y no cargamos el resto de negocios/regiones.
+            estado = estado.copy(
+                plazaFija = true, 
+                plazaId = plazaAsignada, 
+                cargandoCatalogo = false
+            )
+            plazaAsignada?.let { cargarTiendas(it) }
         } else {
             cargarNegocios()
+        }
+        
+        // Observar encuestas pendientes de sincronización
+        viewModelScope.launch {
+            repository.contarPendientes().collect { count ->
+                estado = estado.copy(encuestasPendientes = count)
+            }
         }
     }
 
@@ -122,6 +137,10 @@ class EncuestaViewModel(
     }
 
     fun onTiendaSeleccionada(id: Int) {
+        if (id == -1) {
+            estado = estado.copy(tiendaId = null, preguntas = emptyList(), cuestionarioId = null, calificaciones = emptyMap())
+            return
+        }
         estado = estado.copy(tiendaId = id)
         cargarPreguntas()
     }
@@ -135,11 +154,12 @@ class EncuestaViewModel(
                 estado = estado.copy(cargandoPreguntas = false, error = "No se pudieron cargar las preguntas de esta plaza.")
                 return@launch
             }
-            val (cuestionario, preguntas) = resultado
+            val (cuestionario, preguntas, esCacheado) = resultado
             estado = estado.copy(
                 cuestionarioId = cuestionario.id,
                 preguntas = preguntas,
                 cargandoPreguntas = false,
+                datosEnCache = esCacheado,
             )
         }
     }
@@ -175,6 +195,17 @@ class EncuestaViewModel(
             SincronizacionWorker.agendar(context) // por si el intento inmediato no tuvo señal
             estado = estado.copy(enviando = false, enviadoOk = true)
             onListo()
+        }
+    }
+
+    fun reintentarSincronizacion() {
+        estado = estado.copy(enviando = true, error = null)
+        viewModelScope.launch {
+            val exito = repository.intentarSincronizarPendientes()
+            estado = estado.copy(
+                enviando = false,
+                error = if (!exito) "No se pudo sincronizar. Reintentando en background..." else null
+            )
         }
     }
 

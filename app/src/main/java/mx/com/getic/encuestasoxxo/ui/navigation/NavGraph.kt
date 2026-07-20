@@ -1,6 +1,7 @@
 package mx.com.getic.encuestasoxxo.ui.navigation
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -12,24 +13,40 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import mx.com.getic.encuestasoxxo.AppContainer
 import mx.com.getic.encuestasoxxo.BuildConfig
 import mx.com.getic.encuestasoxxo.data.Sesion
+import mx.com.getic.encuestasoxxo.ui.AppViewModelFactory
 import mx.com.getic.encuestasoxxo.ui.encuesta.EncuestaScreen
 import mx.com.getic.encuestasoxxo.ui.encuesta.EncuestaViewModel
 import mx.com.getic.encuestasoxxo.ui.historial.HistorialScreen
 import mx.com.getic.encuestasoxxo.ui.historial.HistorialViewModel
+import mx.com.getic.encuestasoxxo.ui.login.ChangePasswordScreen
+import mx.com.getic.encuestasoxxo.ui.login.ChangePasswordViewModel
 import mx.com.getic.encuestasoxxo.ui.login.LoginScreen
 import mx.com.getic.encuestasoxxo.ui.login.LoginViewModel
+import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasScreen
+import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
+import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosScreen
+import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
+import mx.com.getic.encuestasoxxo.ui.perfil.PerfilScreen
+import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
 
 object Rutas {
     const val LOGIN = "login"
+    const val CHANGE_PASSWORD = "change_password"
     const val ENCUESTA = "encuesta"
     const val HISTORIAL = "historial"
     const val USUARIOS = "usuarios"
     const val PREGUNTAS = "preguntas"
     const val RESPUESTAS = "respuestas"
+    const val PERFIL = "perfil"
 }
 
 @Composable
@@ -53,29 +70,47 @@ fun NavGraph(container: AppContainer) {
 
     val inicio = when {
         sesionState == null -> Rutas.LOGIN
+        sesionState!!.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
         sesionState!!.esEncuestable -> Rutas.ENCUESTA
+        sesionState!!.rol == "WEBMASTER" -> Rutas.USUARIOS
         else -> Rutas.HISTORIAL
     }
 
     NavHost(navController = navController, startDestination = inicio) {
         composable(Rutas.LOGIN) {
-            val viewModel = viewModel { LoginViewModel(container.authRepository) }
+            val factory = AppViewModelFactory(container)
+            val viewModel = viewModel { factory.create(LoginViewModel::class.java) }
             LoginScreen(
                 viewModel = viewModel,
-                onLoginExitoso = { rol ->
-                    val destino = if (rol == "ATI") Rutas.HISTORIAL else Rutas.ENCUESTA
-                    navController.navigate(destino) { popUpTo(Rutas.LOGIN) { inclusive = true } }
+                onLoginExitoso = { rol, debeCambiar ->
+                    if (debeCambiar) {
+                        navController.navigate(Rutas.CHANGE_PASSWORD) { popUpTo(Rutas.LOGIN) { inclusive = true } }
+                    } else {
+                        val destino = when (rol) {
+                            "ATI" -> Rutas.HISTORIAL
+                            "WEBMASTER" -> Rutas.USUARIOS
+                            else -> Rutas.ENCUESTA
+                        }
+                        navController.navigate(destino) { popUpTo(Rutas.LOGIN) { inclusive = true } }
+                    }
                 },
             )
+        }
+
+        composable(Rutas.CHANGE_PASSWORD) {
+            val factory = AppViewModelFactory(container)
+            val viewModel = viewModel { factory.create(ChangePasswordViewModel::class.java) }
+            ChangePasswordScreen(viewModel = viewModel, onExito = {
+                navController.navigate(Rutas.LOGIN) { popUpTo(0) { inclusive = true } }
+            })
         }
 
         composable(Rutas.ENCUESTA) {
             val sesion = sesionState
             if (sesion != null) {
-                ConDrawer(navController, sesion, container) { abrirMenu ->
-                    val viewModel = viewModel {
-                        EncuestaViewModel(container.encuestaRepository, sesion)
-                    }
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(EncuestaViewModel::class.java) }
                     EncuestaScreen(
                         viewModel = viewModel,
                         sesion = sesion,
@@ -89,11 +124,10 @@ fun NavGraph(container: AppContainer) {
         composable(Rutas.HISTORIAL) {
             val sesion = sesionState
             if (sesion != null) {
-                ConDrawer(navController, sesion, container) { abrirMenu ->
-                    val viewModel = viewModel {
-                        mx.com.getic.encuestasoxxo.ui.historial.HistorialViewModel(container.encuestaRepository)
-                    }
-                    mx.com.getic.encuestasoxxo.ui.historial.HistorialScreen(
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container)
+                    val viewModel = viewModel { factory.create(HistorialViewModel::class.java) }
+                    HistorialScreen(
                         viewModel = viewModel,
                         onAbrirMenu = abrirMenu,
                     )
@@ -104,10 +138,13 @@ fun NavGraph(container: AppContainer) {
         composable(Rutas.USUARIOS) {
             val sesion = sesionState
             if (sesion != null) {
-                ConDrawer(navController, sesion, container) { _ ->
-                    androidx.compose.material3.Text(
-                        "Gestionar usuarios -- siguiente avance (necesita API de CRUD)",
-                        modifier = Modifier.padding(24.dp),
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container)
+                    val viewModel = viewModel { factory.create(UsuariosViewModel::class.java) }
+                    UsuariosScreen(
+                        viewModel = viewModel,
+                        onAbrirMenu = abrirMenu,
+                        apiBaseUrl = BuildConfig.API_BASE_URL
                     )
                 }
             }
@@ -116,10 +153,12 @@ fun NavGraph(container: AppContainer) {
         composable(Rutas.PREGUNTAS) {
             val sesion = sesionState
             if (sesion != null) {
-                ConDrawer(navController, sesion, container) { _ ->
-                    androidx.compose.material3.Text(
-                        "Gestionar preguntas -- siguiente avance (necesita API de CRUD)",
-                        modifier = Modifier.padding(24.dp),
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(PreguntasViewModel::class.java) }
+                    PreguntasScreen(
+                        viewModel = viewModel,
+                        onAbrirMenu = abrirMenu,
                     )
                 }
             }
@@ -128,12 +167,26 @@ fun NavGraph(container: AppContainer) {
         composable(Rutas.RESPUESTAS) {
             val sesion = sesionState
             if (sesion != null) {
-                ConDrawer(navController, sesion, container) { _ ->
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { _ ->
                     androidx.compose.material3.Text(
                         "Respuestas de tiendas -- siguiente avance (necesita API de lectura)",
                         modifier = Modifier.padding(24.dp),
                     )
                 }
+            }
+        }
+
+        composable(Rutas.PERFIL) {
+            val sesion = sesionState
+            if (sesion != null) {
+                val factory = AppViewModelFactory(container, sesion)
+                val viewModel = viewModel { factory.create(PerfilViewModel::class.java) }
+                PerfilScreen(
+                    viewModel = viewModel,
+                    sesion = sesion,
+                    apiBaseUrl = BuildConfig.API_BASE_URL,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
@@ -148,28 +201,89 @@ private fun ConDrawer(
     navController: NavHostController,
     sesion: Sesion,
     container: AppContainer,
+    apiBaseUrl: String,
     contenido: @Composable (abrirMenu: () -> Unit) -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) {
+        sesion.fotoPerfil?.let { perfil ->
+            if (perfil.startsWith("http")) {
+                perfil
+            } else {
+                val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
+                "$base/$perfil"
+            }
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clickable { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        if (fotoUrl != null) {
+                            AsyncImage(
+                                model = fotoUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = null,
+                                modifier = Modifier.padding(8.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Column {
+                        Text(
+                            text = sesion.nombreCompleto.ifBlank { "Usuario" },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = sesion.rol,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    sesion.nombreCompleto.ifBlank { sesion.correo },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    sesion.rol,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
+
+                NavigationDrawerItem(
+                    label = { Text("Mi Perfil") },
+                    selected = false,
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
+                )
+
+                // Historial para ATI y otros, excepto WEBMASTER y PFS
+                if (sesion.rol != "WEBMASTER" && sesion.rol != "PFS") {
+                    NavigationDrawerItem(
+                        label = { Text("Historial de NPS") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.History, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.HISTORIAL) },
+                    )
+                }
 
                 if (sesion.esEncuestable) {
                     NavigationDrawerItem(
@@ -177,14 +291,6 @@ private fun ConDrawer(
                         selected = false,
                         icon = { Icon(Icons.Filled.Star, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ENCUESTA) },
-                    )
-                }
-                if (sesion.veResultadosTiendas) {
-                    NavigationDrawerItem(
-                        label = { Text("Respuestas de tiendas") },
-                        selected = false,
-                        icon = { Icon(Icons.Filled.BarChart, contentDescription = null) },
-                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.RESPUESTAS) },
                     )
                 }
                 if (sesion.gestionaPreguntas) {

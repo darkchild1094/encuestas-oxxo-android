@@ -1,0 +1,3 @@
+RewriteEngine On
+# Importante para que el header Authorization llegue a PHP en Apache
+CGIPassAuth On

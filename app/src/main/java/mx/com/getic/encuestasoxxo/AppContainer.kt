@@ -6,6 +6,7 @@ import mx.com.getic.encuestasoxxo.data.local.AppDatabase
 import mx.com.getic.encuestasoxxo.data.remote.RetrofitClient
 import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
+import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
 
 // Service Locator simple: un solo lugar donde se arman las
 // dependencias, sin librerias de DI. Para el tamano de esta app
@@ -21,5 +22,9 @@ class AppContainer(context: Context) {
 
     val encuestaRepository: EncuestaRepository by lazy {
         EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), sessionManager)
+    }
+
+    val usuarioRepository: UsuarioRepository by lazy {
+        UsuarioRepository(api, sessionManager)
     }
 }
