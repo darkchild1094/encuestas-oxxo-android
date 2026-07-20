@@ -10,38 +10,45 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Teal80,
-    secondary = TealGrey80,
-    tertiary = LightTeal80
+    primary = PulsoRedLight,
+    onPrimary = Color.White,
+    secondary = PulsoGoldLight,
+    onSecondary = Color(0xFF3A2600),
+    tertiary = PulsoGold,
+    background = PulsoSurfaceDark,
+    surface = PulsoSurfaceDark,
+    onBackground = Color(0xFFF5EAEA),
+    onSurface = Color(0xFFF5EAEA)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal40,
-    secondary = TealGrey40,
-    tertiary = LightTeal40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = PulsoRed,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primaryContainer = Color(0xFFFFDAD8),
+    onPrimaryContainer = PulsoRedDark,
+    secondary = PulsoGold,
+    onSecondary = Color(0xFF3A2600),
+    secondaryContainer = Color(0xFFFFE7B3),
+    onSecondaryContainer = PulsoGoldDark,
+    tertiary = PulsoGoldDark,
+    background = PulsoSurfaceLight,
+    surface = Color.White,
+    onBackground = Color(0xFF211919),
+    onSurface = Color(0xFF211919)
 )
 
 @Composable
-fun EncuestasOxxoTheme(
+fun PulsoTiTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Desactivado para forzar el Teal
+    // Dynamic color se mantiene desactivado para respetar siempre la marca Pulso TI
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

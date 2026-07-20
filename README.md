@@ -1,4 +1,6 @@
-# Encuestas OXXO - App Android (Kotlin + Jetpack Compose)
+# Pulso TI - App Android (Kotlin + Jetpack Compose)
+
+> Antes conocida como "Encuestas OXXO".
 
 ## Que trae este primer avance
 - Proyecto Gradle listo para abrir en Android Studio (usa KSP, Compose BOM 2024.06, Kotlin 1.9.24)

@@ -1,6 +1,7 @@
 package mx.com.getic.encuestasoxxo.ui.login
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -29,6 +31,14 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.background,
+                    )
+                )
+            )
             .padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -37,20 +47,14 @@ fun LoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Logo (opcional si tienes el recurso, si no, usa el texto)
-            Icon(
-                Icons.Filled.Lock, 
-                contentDescription = null, 
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Image(
+                painter = painterResource(id = R.drawable.logo_pulso_ti),
+                contentDescription = "Pulso TI",
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .padding(bottom = 8.dp)
             )
 
-            Text(
-                "Encuestas OXXO", 
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
             Text(
                 "Inicia sesión para continuar",
                 style = MaterialTheme.typography.bodyMedium,
@@ -59,6 +63,18 @@ fun LoginScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            Card(
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
             OutlinedTextField(
                 value = estado.correo,
                 onValueChange = viewModel::onCorreoChange,
@@ -116,6 +132,8 @@ fun LoginScreen(
                 } else {
                     Text("ENTRAR", fontWeight = FontWeight.Bold)
                 }
+            }
+            }
             }
         }
     }
