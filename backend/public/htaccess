@@ -1,9 +1,0 @@
-RewriteEngine On
-
-# Respaldo por si getallheaders() no esta disponible: fuerza que el
-# header Authorization SI llegue a $_SERVER['HTTP_AUTHORIZATION'].
-CGIPassAuth On
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
