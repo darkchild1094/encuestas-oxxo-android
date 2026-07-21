@@ -1,9 +1,7 @@
 package mx.com.getic.encuestasoxxo.ui.encuesta
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -32,16 +30,35 @@ fun NpsFaceSelector(
     onSeleccionar: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    // Dos filas de 5 caritas, repartidas a lo ancho de la pantalla: se ve
+    // completo sin necesidad de deslizar, sin importar el tamaño del equipo.
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        for (numero in 1..10) {
-            CaritaNps(
-                numero = numero,
-                seleccionada = seleccion == numero,
-                onClick = { onSeleccionar(numero) },
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            for (numero in 1..5) {
+                CaritaNps(
+                    numero = numero,
+                    seleccionada = seleccion == numero,
+                    onClick = { onSeleccionar(numero) },
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            for (numero in 6..10) {
+                CaritaNps(
+                    numero = numero,
+                    seleccionada = seleccion == numero,
+                    onClick = { onSeleccionar(numero) },
+                )
+            }
         }
     }
 }
@@ -57,7 +74,7 @@ private fun CaritaNps(numero: Int, seleccionada: Boolean, onClick: () -> Unit) {
     ) {
         Canvas(
             modifier = Modifier
-                .size(48.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .background(if (seleccionada) color else color.copy(alpha = 0.35f))
         ) {
