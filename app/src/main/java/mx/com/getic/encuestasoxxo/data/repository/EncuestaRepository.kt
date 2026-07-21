@@ -4,10 +4,12 @@ import kotlinx.coroutines.flow.Flow
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.local.dao.CuestionarioDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
+import mx.com.getic.encuestasoxxo.data.local.dao.TiendaDao
 import mx.com.getic.encuestasoxxo.data.local.entities.CuestionarioEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.TiendaEntity
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
 import mx.com.getic.encuestasoxxo.data.remote.dto.*
 import timber.log.Timber
@@ -27,17 +29,33 @@ class EncuestaRepository(
     private val api: ApiService,
     private val cuestionarioDao: CuestionarioDao,
     private val encuestaDao: EncuestaDao,
+    private val tiendaDao: TiendaDao,
     private val sessionManager: SessionManager,
 ) {
     private suspend fun token(): String = "Bearer " + (sessionManager.sesionActualBloqueante()?.token ?: "")
 
-    // --- Catalogo (negocio/region/plaza/tienda), siempre en linea --
-    // el selector solo se usa con señal, no forma parte del flujo
-    // offline (eso es exclusivo de la parte de contestar y subir).
+    // --- Catalogo (negocio/region/plaza), siempre en linea -- solo se
+    // usa con señal, para armar el arbol antes de llegar a la tienda. --
     suspend fun negocios(): List<NegocioDto> = api.negocios(token())
     suspend fun regiones(negocioId: Int): List<RegionDto> = api.regiones(token(), negocioId)
     suspend fun plazas(regionId: Int): List<PlazaDto> = api.plazas(token(), regionId)
-    suspend fun tiendas(plazaId: Int): List<TiendaDto> = api.tiendas(token(), plazaId)
+
+    // --- Tiendas de una plaza: se refrescan de red y se cachean en
+    // Room (son pocas, ya vienen acotadas a la plaza del usuario), para
+    // que el selector funcione aunque el tecnico este ya sin señal
+    // dentro de la tienda. ---
+    suspend fun tiendas(plazaId: Int): List<TiendaDto> {
+        return try {
+            val tiendas = api.tiendas(token(), plazaId)
+            tiendaDao.borrarDe(plazaId)
+            tiendaDao.guardar(tiendas.map { TiendaEntity(it.id, plazaId, it.nombre, it.codigo) })
+            Timber.d("Tiendas de plaza $plazaId actualizadas desde servidor: ${tiendas.size}")
+            tiendas
+        } catch (e: Exception) {
+            Timber.w(e, "Error obteniendo tiendas, usando cache local")
+            tiendaDao.obtenerPorPlaza(plazaId).map { TiendaDto(it.id, it.nombre, it.codigo) }
+        }
+    }
 
     // --- Cuestionario: se refresca de red y se cachea en Room para
     // poder re-contestar en la misma tienda aunque se caiga la señal

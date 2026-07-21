@@ -23,7 +23,7 @@ class AppContainer(context: Context) {
     }
 
     val encuestaRepository: EncuestaRepository by lazy {
-        EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), sessionManager)
+        EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), database.tiendaDao(), sessionManager)
     }
 
     val usuarioRepository: UsuarioRepository by lazy {
