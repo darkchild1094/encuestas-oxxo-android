@@ -5,8 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import mx.com.getic.encuestasoxxo.data.SessionManager
+import mx.com.getic.encuestasoxxo.data.UsuarioRecordado
+import mx.com.getic.encuestasoxxo.data.UsuariosRecordadosStore
 import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.ResultadoLogin
 
@@ -15,14 +20,28 @@ data class LoginUiState(
     val password: String = "",
     val cargando: Boolean = false,
     val error: String? = null,
+    // Cuando no es null, la pantalla muestra "modo cuenta elegida":
+    // solo pide la contraseña de esta cuenta (no hay que volver a
+    // teclear el correo).
+    val cuentaSeleccionada: UsuarioRecordado? = null,
 )
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
+    private val usuariosRecordadosStore: UsuariosRecordadosStore,
 ) : ViewModel() {
     var estado by mutableStateOf(LoginUiState())
         private set
+
+    // Cuentas que ya han iniciado sesion en este dispositivo, mas
+    // reciente primero. Sobrevive a cerrar sesion.
+    val cuentasRecordadas: StateFlow<List<UsuarioRecordado>> =
+        usuariosRecordadosStore.usuariosRecordados.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
 
     fun onCorreoChange(valor: String) {
         estado = estado.copy(correo = valor, error = null)
@@ -30,6 +49,32 @@ class LoginViewModel(
 
     fun onPasswordChange(valor: String) {
         estado = estado.copy(password = valor, error = null)
+    }
+
+    // El usuario toco una de las cuentas recordadas: se precarga el
+    // correo y solo falta que teclee su contraseña.
+    fun seleccionarCuenta(usuario: UsuarioRecordado) {
+        estado = estado.copy(
+            correo = usuario.correo,
+            password = "",
+            error = null,
+            cuentaSeleccionada = usuario,
+        )
+    }
+
+    // "No soy yo" / "Usar otra cuenta": vuelve a mostrar el campo de
+    // correo en blanco para teclear una cuenta distinta.
+    fun usarOtraCuenta() {
+        estado = estado.copy(correo = "", password = "", error = null, cuentaSeleccionada = null)
+    }
+
+    fun olvidarCuenta(usuario: UsuarioRecordado) {
+        viewModelScope.launch {
+            usuariosRecordadosStore.olvidar(usuario.correo)
+        }
+        if (estado.cuentaSeleccionada?.correo == usuario.correo) {
+            usarOtraCuenta()
+        }
     }
 
     // onExito recibe el rol para que la navegacion decida a que

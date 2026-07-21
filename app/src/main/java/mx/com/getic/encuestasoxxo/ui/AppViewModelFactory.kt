@@ -25,7 +25,7 @@ class AppViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when (modelClass) {
             LoginViewModel::class.java -> {
-                LoginViewModel(container.authRepository, container.sessionManager) as T
+                LoginViewModel(container.authRepository, container.sessionManager, container.usuariosRecordadosStore) as T
             }
             ChangePasswordViewModel::class.java -> {
                 ChangePasswordViewModel(container.usuarioRepository) as T

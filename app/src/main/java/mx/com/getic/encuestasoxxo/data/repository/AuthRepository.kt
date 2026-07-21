@@ -1,6 +1,7 @@
 package mx.com.getic.encuestasoxxo.data.repository
 
 import mx.com.getic.encuestasoxxo.data.SessionManager
+import mx.com.getic.encuestasoxxo.data.UsuariosRecordadosStore
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
 import mx.com.getic.encuestasoxxo.data.remote.dto.LoginRequest
 
@@ -12,11 +13,18 @@ sealed class ResultadoLogin {
 class AuthRepository(
     private val api: ApiService,
     private val sesion: SessionManager,
+    private val usuariosRecordados: UsuariosRecordadosStore,
 ) {
     suspend fun login(correo: String, password: String): ResultadoLogin {
         return try {
             val respuesta = api.login(LoginRequest(correo, password))
             sesion.guardarSesion(respuesta.token, respuesta.usuario)
+            // Recuerda el correo (y nombre) en este dispositivo para que,
+            // al volver a iniciar sesion, no haya que escribirlo de nuevo.
+            usuariosRecordados.recordar(
+                correo = respuesta.usuario.correo,
+                nombre = respuesta.usuario.nombre_completo ?: respuesta.usuario.correo,
+            )
             ResultadoLogin.Ok(
                 rol = respuesta.usuario.rol,
                 debeCambiarPassword = respuesta.usuario.debe_cambiar_password ?: false
