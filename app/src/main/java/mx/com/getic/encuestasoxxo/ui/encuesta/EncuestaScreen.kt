@@ -35,8 +35,12 @@ private fun esPreguntaDePfs(texto: String): Boolean =
 private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
     if (rutaFoto.isNullOrBlank()) return null
     if (rutaFoto.startsWith("http")) return rutaFoto
+    // OJO: sin /public/ -- alwaysdata sirve la carpeta public/ del repo
+    // directamente como raiz de /nps/ (ver RewriteBase /nps/ dentro de
+    // public/.htaccess), asi que agregar /public/ aqui duplica la ruta
+    // y la foto no carga. Mismo patron que ya usa UsuariosScreen.kt.
     val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
-    return "$base/public/$rutaFoto"
+    return "$base/$rutaFoto"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,14 +53,6 @@ fun EncuestaScreen(
 ) {
     val estado = viewModel.estado
     val context = LocalContext.current
-
-    LaunchedEffect(sesion) {
-        val baseStaticUrl = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
-        // Segun el Logcat, apiBaseUrl ya tiene /nps/, asi que solo agregamos /public/
-        val urlFinal = "$baseStaticUrl/public/${sesion.fotoPerfil}"
-        Timber.d("COIL_DEBUG: URL DE FOTO GENERADA: $urlFinal")
-        Timber.d("COIL_DEBUG: fotoPerfil en sesion: ${sesion.fotoPerfil}")
-    }
 
     LaunchedEffect(estado.error) {
         estado.error?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
