@@ -331,8 +331,8 @@ private fun ConDrawer(
                     onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
                 )
 
-                // Respuestas de tiendas para ATI y otros, excepto WEBMASTER y PFS
-                if (sesion.rol != "WEBMASTER" && sesion.rol != "PFS") {
+                // Solo ATI consulta respuestas; el admin no accede a este modulo.
+                if (sesion.rol == "ATI" && sesion.veResultadosTiendas) {
                     NavigationDrawerItem(
                         label = { Text("Respuestas de tiendas") },
                         selected = false,
