@@ -48,10 +48,13 @@ class HistorialViewModel(
                 val sesion = sessionManager.sesionActualBloqueante()
                 val atisDeLaPlaza = sesion?.plazaId?.let { repository.atisDisponibles(it) }.orEmpty()
                 val filas = repository.obtenerRespuestas()
-                val atis = atisDeLaPlaza.ifEmpty {
-                    filas.mapNotNull { fila ->
-                        fila.ati_id?.let { AtiDto(it, fila.ati_nombre ?: "ATI", null) }
-                    }.distinctBy { it.id }
+                val atisDeLasRespuestas = filas.mapNotNull { fila ->
+                    fila.ati_id?.let { AtiDto(it, fila.ati_nombre ?: "ATI", null) }
+                }.distinctBy { it.id }
+                val atis = if (sesion?.usuarioId == 128) {
+                    atisDeLasRespuestas
+                } else atisDeLaPlaza.ifEmpty {
+                    atisDeLasRespuestas
                 }
                 estado = estado.copy(
                     cargando = false,
