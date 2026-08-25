@@ -1,5 +1,9 @@
 package mx.com.getic.encuestasoxxo.ui.navigation
 
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -7,6 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -19,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import androidx.core.content.ContextCompat
 import mx.com.getic.encuestasoxxo.AppContainer
 import mx.com.getic.encuestasoxxo.BuildConfig
 import mx.com.getic.encuestasoxxo.data.Sesion
@@ -35,8 +41,11 @@ import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasScreen
 import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasScreen
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
+import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasScreen
+import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosScreen
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
+import mx.com.getic.encuestasoxxo.sync.NotificacionesWorker
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilScreen
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
 
@@ -48,6 +57,7 @@ object Rutas {
     const val USUARIOS = "usuarios"
     const val PREGUNTAS = "preguntas"
     const val TIENDAS = "tiendas"
+    const val ESTADISTICAS = "estadisticas"
     const val RESPUESTAS = "respuestas"
     const val PERFIL = "perfil"
 }
@@ -56,12 +66,24 @@ object Rutas {
 fun NavGraph(container: AppContainer) {
     val navController = rememberNavController()
     val sesionState by container.sessionManager.sesionActual.collectAsState(initial = null)
+    val context = LocalContext.current
     var revisado by remember { mutableStateOf(false) }
 
     // Espera UNA lectura de DataStore antes de decidir la pantalla de
     // arranque -- evita un parpadeo al Login si ya habia sesion guardada.
     LaunchedEffect(sesionState) {
         if (!revisado) revisado = true
+        if (sesionState?.rol == "ATI" &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            (context as? Activity)?.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
+        }
+        if (sesionState?.rol == "ATI") {
+            NotificacionesWorker.agendar(context)
+        } else if (sesionState == null) {
+            NotificacionesWorker.cancelar(context)
+        }
     }
 
     if (!revisado) {
@@ -183,6 +205,20 @@ fun NavGraph(container: AppContainer) {
             }
         }
 
+        composable(Rutas.ESTADISTICAS) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(EstadisticasViewModel::class.java) }
+                    EstadisticasScreen(
+                        viewModel = viewModel,
+                        onAbrirMenu = abrirMenu,
+                    )
+                }
+            }
+        }
+
         composable(Rutas.RESPUESTAS) {
             val sesion = sesionState
             if (sesion != null) {
@@ -225,6 +261,7 @@ private fun ConDrawer(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) {
         sesion.fotoPerfil?.let { perfil ->
@@ -294,10 +331,10 @@ private fun ConDrawer(
                     onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
                 )
 
-                // Historial para ATI y otros, excepto WEBMASTER y PFS
+                // Respuestas de tiendas para ATI y otros, excepto WEBMASTER y PFS
                 if (sesion.rol != "WEBMASTER" && sesion.rol != "PFS") {
                     NavigationDrawerItem(
-                        label = { Text("Historial de NPS") },
+                        label = { Text("Respuestas de tiendas") },
                         selected = false,
                         icon = { Icon(Icons.Filled.History, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.HISTORIAL) },
@@ -327,6 +364,12 @@ private fun ConDrawer(
                         icon = { Icon(Icons.Filled.Store, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.TIENDAS) },
                     )
+                    NavigationDrawerItem(
+                        label = { Text("Estadísticas") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.BarChart, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ESTADISTICAS) },
+                    )
                 }
 
                 if (sesion.gestionaUsuarios) {
@@ -347,6 +390,7 @@ private fun ConDrawer(
                     onClick = {
                         scope.launch {
                             container.authRepository.logout()
+                            NotificacionesWorker.cancelar(context)
                             drawerState.close()
                             navController.navigate(Rutas.LOGIN) {
                                 popUpTo(0) { inclusive = true }

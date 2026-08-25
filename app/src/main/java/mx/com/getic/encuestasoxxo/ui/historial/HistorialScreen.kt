@@ -40,8 +40,8 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        if (tiendaSeleccionada == null) "Tus tiendas -- historial"
-                        else encuestasTienda.firstOrNull()?.tienda ?: "Historial de tienda"
+                        if (tiendaSeleccionada == null) "Respuestas de tiendas"
+                        else encuestasTienda.firstOrNull()?.tienda ?: "Respuestas de tienda"
                     )
                 },
                 navigationIcon = {
@@ -74,7 +74,7 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
 
         if (estado.encuestas.isEmpty() && estado.atis.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("Todavia no hay respuestas en tus tiendas asignadas.")
+                Text("Todavia no hay respuestas en tus tiendas.")
             }
             return@Scaffold
         }

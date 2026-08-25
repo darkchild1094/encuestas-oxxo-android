@@ -60,7 +60,7 @@ class HistorialViewModel(
                     atiSeleccionadoId = atis.firstOrNull()?.id,
                 )
             } catch (e: Exception) {
-                estado = estado.copy(cargando = false, error = "No se pudo cargar el historial. Revisa tu conexion.")
+                estado = estado.copy(cargando = false, error = "No se pudieron cargar las respuestas. Revisa tu conexion.")
             }
         }
     }
