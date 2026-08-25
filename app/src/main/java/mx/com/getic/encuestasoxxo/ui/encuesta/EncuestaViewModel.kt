@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
+import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.NegocioDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.PlazaDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.RegionDto
@@ -27,6 +28,10 @@ data class EncuestaUiState(
     val regionId: Int? = null,
     val plazaId: Int? = null,
     val tiendaId: Int? = null,
+    val tiendaSeleccionada: TiendaDto? = null,
+    val atisDisponibles: List<AtiDto> = emptyList(),
+    val cargandoAtis: Boolean = false,
+    val asignandoAti: Boolean = false,
     val cuestionarioId: Int? = null,
     val preguntas: List<PreguntaEntity> = emptyList(),
     val calificaciones: Map<Int, Int> = emptyMap(), // preguntaId -> 1..10
@@ -138,11 +143,60 @@ class EncuestaViewModel(
 
     fun onTiendaSeleccionada(id: Int) {
         if (id == -1) {
-            estado = estado.copy(tiendaId = null, preguntas = emptyList(), cuestionarioId = null, calificaciones = emptyMap())
+            estado = estado.copy(
+                tiendaId = null,
+                tiendaSeleccionada = null,
+                atisDisponibles = emptyList(),
+                preguntas = emptyList(),
+                cuestionarioId = null,
+                calificaciones = emptyMap(),
+            )
             return
         }
-        estado = estado.copy(tiendaId = id)
+        val tienda = estado.tiendas.firstOrNull { it.id == id }
+        estado = estado.copy(tiendaId = id, tiendaSeleccionada = tienda, atisDisponibles = emptyList())
         cargarPreguntas()
+
+        // Si la tienda no trae ATI asignado (comun fuera de Valles),
+        // cargamos el catalogo de ATIs de su plaza para el selector.
+        if (tienda != null && tienda.ati_usuario_id == null) {
+            cargarAtisDisponibles(tienda.plaza_id)
+        }
+    }
+
+    private fun cargarAtisDisponibles(plazaId: Int) {
+        estado = estado.copy(cargandoAtis = true)
+        viewModelScope.launch {
+            val atis = repository.atisDisponibles(plazaId)
+            estado = estado.copy(atisDisponibles = atis, cargandoAtis = false)
+        }
+    }
+
+    // El tecnico elige manualmente el ATI de la tienda (cuando no
+    // tenia uno asignado). Se guarda PERMANENTE en la tienda: la
+    // proxima encuesta ahi ya no vuelve a preguntar.
+    fun onAtiSeleccionado(usuarioId: Int) {
+        val ati = estado.atisDisponibles.firstOrNull { it.id == usuarioId } ?: return
+        val tiendaActual = estado.tiendaSeleccionada ?: return
+
+        estado = estado.copy(asignandoAti = true)
+        viewModelScope.launch {
+            val exito = repository.asignarAti(tiendaActual.id, usuarioId)
+            val tiendaActualizada = tiendaActual.copy(
+                ati_usuario_id = ati.id,
+                ati_nombre = ati.nombre_completo,
+                ati_foto = ati.foto_perfil,
+            )
+            estado = estado.copy(
+                asignandoAti = false,
+                tiendaSeleccionada = tiendaActualizada,
+                atisDisponibles = emptyList(),
+                // Aunque falle guardarlo en el servidor (sin señal), la
+                // encuesta sigue -- solo no quedara memorizado para la
+                // proxima vez y se le volvera a preguntar.
+                error = if (!exito) "No se pudo guardar el ATI en el servidor, pero puedes continuar." else null,
+            )
+        }
     }
 
     private fun cargarPreguntas() {
@@ -212,6 +266,8 @@ class EncuestaViewModel(
     fun reiniciarParaNuevaEncuesta() {
         estado = estado.copy(
             tiendaId = null,
+            tiendaSeleccionada = null,
+            atisDisponibles = emptyList(),
             cuestionarioId = null,
             preguntas = emptyList(),
             calificaciones = emptyMap(),

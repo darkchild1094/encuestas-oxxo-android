@@ -53,8 +53,27 @@ class EncuestaRepository(
             tiendas
         } catch (e: Exception) {
             Timber.w(e, "Error obteniendo tiendas, usando cache local")
-            tiendaDao.obtenerPorPlaza(plazaId).map { TiendaDto(it.id, it.nombre, it.codigo) }
+            // El cache local no guarda datos de ATI (cambian poco y no
+            // bloquean la encuesta): sin señal, la tarjeta/selector de
+            // ATI simplemente no se muestra hasta que vuelva la conexion.
+            tiendaDao.obtenerPorPlaza(plazaId).map { TiendaDto(it.id, it.nombre, it.codigo, plazaId) }
         }
+    }
+
+    // --- ATI de la tienda: solo en linea, no se cachea (ver nota arriba). ---
+    suspend fun atisDisponibles(plazaId: Int): List<AtiDto> = try {
+        api.atisDisponibles(token(), plazaId)
+    } catch (e: Exception) {
+        Timber.w(e, "Error obteniendo ATIs disponibles")
+        emptyList()
+    }
+
+    suspend fun asignarAti(tiendaId: Int, usuarioId: Int): Boolean = try {
+        api.asignarAti(token(), AsignarAtiRequest(tiendaId, usuarioId))
+        true
+    } catch (e: Exception) {
+        Timber.e(e, "Error asignando ATI a tienda $tiendaId")
+        false
     }
 
     // --- Cuestionario: se refresca de red y se cachea en Room para
