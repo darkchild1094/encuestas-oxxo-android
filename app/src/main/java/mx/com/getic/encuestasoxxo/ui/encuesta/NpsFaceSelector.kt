@@ -1,5 +1,6 @@
 package mx.com.getic.encuestasoxxo.ui.encuesta
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -12,9 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Canvas
 
 // Colores identicos al ejemplo: 1-6 detractor (rojo), 7-8 pasivo
 // (amarillo), 9-10 promotor (verde).
@@ -30,51 +31,42 @@ fun NpsFaceSelector(
     onSeleccionar: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Dos filas de 5 caritas, repartidas a lo ancho de la pantalla: se ve
-    // completo sin necesidad de deslizar, sin importar el tamaño del equipo.
-    Column(
+    // Una sola fila de 10 caritas. El modifier.weight(1f) en cada elemento
+    // asegura que todas se repartan el ancho de la pantalla en partes iguales.
+    Row(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp), // Pequeño espacio entre caritas
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            for (numero in 1..5) {
-                CaritaNps(
-                    numero = numero,
-                    seleccionada = seleccion == numero,
-                    onClick = { onSeleccionar(numero) },
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            for (numero in 6..10) {
-                CaritaNps(
-                    numero = numero,
-                    seleccionada = seleccion == numero,
-                    onClick = { onSeleccionar(numero) },
-                )
-            }
+        for (numero in 1..10) {
+            CaritaNps(
+                numero = numero,
+                seleccionada = seleccion == numero,
+                onClick = { onSeleccionar(numero) },
+                modifier = Modifier.weight(1f) // Obliga a distribuir equitativamente el ancho
+            )
         }
     }
 }
 
 @Composable
-private fun CaritaNps(numero: Int, seleccionada: Boolean, onClick: () -> Unit) {
+private fun CaritaNps(
+    numero: Int,
+    seleccionada: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val color = colorPara(numero)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .selectable(selected = seleccionada, onClick = onClick)
-            .padding(2.dp),
+            .padding(vertical = 4.dp), // Solo padding vertical, el horizontal lo maneja Arrangement.spacedBy
     ) {
         Canvas(
             modifier = Modifier
-                .size(40.dp)
+                .fillMaxWidth() // Toma todo el ancho que le da el weight de su padre
+                .aspectRatio(1f) // Se mantiene como un cuadrado perfecto dinámicamente
                 .clip(CircleShape)
                 .background(if (seleccionada) color else color.copy(alpha = 0.35f))
         ) {
@@ -95,12 +87,15 @@ private fun CaritaNps(numero: Int, seleccionada: Boolean, onClick: () -> Unit) {
                 numero <= 8 -> 0f           // neutral: linea recta
                 else -> h * 0.12f           // feliz: arco hacia abajo en los extremos
             }
-            val path = androidx.compose.ui.graphics.Path().apply {
+            val path = Path().apply {
                 moveTo(w / 2 - mouthHalfWidth, mouthY)
                 quadraticBezierTo(w / 2, mouthY + curvatura, w / 2 + mouthHalfWidth, mouthY)
             }
             drawPath(path, color = ojoColor, style = Stroke(width = w * 0.045f))
         }
+
+        Spacer(modifier = Modifier.height(4.dp)) // Espacio entre el círculo y el número
+
         Text(
             text = numero.toString(),
             style = MaterialTheme.typography.labelMedium,

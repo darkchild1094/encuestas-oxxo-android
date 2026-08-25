@@ -1,0 +1,7 @@
+tasks.register("checkJava") {
+    doLast {
+        println("Java Version: " + System.getProperty("java.version"))
+        println("Java Runtime Version: " + System.getProperty("java.runtime.version"))
+        println("Java Home: " + System.getProperty("java.home"))
+    }
+}
