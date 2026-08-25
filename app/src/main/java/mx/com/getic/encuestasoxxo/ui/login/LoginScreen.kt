@@ -4,31 +4,38 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import mx.com.getic.encuestasoxxo.R
 import mx.com.getic.encuestasoxxo.data.UsuarioRecordado
+
+private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
+    if (rutaFoto.isNullOrBlank()) return null
+    if (rutaFoto.startsWith("http")) return rutaFoto
+    val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
+    return "$base/$rutaFoto"
+}
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
+    apiBaseUrl: String,
     onLoginExitoso: (rol: String, debeCambiar: Boolean) -> Unit,
 ) {
     val estado = viewModel.estado
@@ -91,26 +98,29 @@ fun LoginScreen(
                 ) {
                     if (mostrarListaCuentas) {
                         Text(
-                            "Cuentas de este dispositivo",
+                            "Continuar como...",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            cuentasRecordadas.forEach { cuenta ->
-                                FilaCuentaRecordada(
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(cuentasRecordadas) { cuenta ->
+                                BurbujaUsuario(
                                     cuenta = cuenta,
+                                    apiBaseUrl = apiBaseUrl,
                                     onClick = { viewModel.seleccionarCuenta(cuenta) },
-                                    onOlvidar = { viewModel.olvidarCuenta(cuenta) },
+                                    onOlvidar = { viewModel.olvidarCuenta(cuenta) }
                                 )
                             }
+                            item {
+                                BurbujaNuevaCuenta(onClick = { viewModel.usarOtraCuenta() })
+                            }
                         }
-                        TextButton(
-                            onClick = { viewModel.usarOtraCuenta() },
-                            modifier = Modifier.align(Alignment.End),
-                        ) {
-                            Text("Usar otra cuenta")
-                        }
-                        HorizontalDivider()
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     }
 
                     if (estado.cuentaSeleccionada != null) {
@@ -122,7 +132,14 @@ fun LoginScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            AvatarInicial(nombreOCorreo = estado.cuentaSeleccionada.nombre.ifBlank { estado.cuentaSeleccionada.correo })
+                            val fotoUrl = remember(estado.cuentaSeleccionada.fotoPerfil, apiBaseUrl) {
+                                urlFoto(estado.cuentaSeleccionada.fotoPerfil, apiBaseUrl)
+                            }
+                            AvatarConFoto(
+                                fotoUrl = fotoUrl,
+                                nombre = estado.cuentaSeleccionada.nombre,
+                                size = 48.dp
+                            )
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     estado.cuentaSeleccionada.nombre.ifBlank { estado.cuentaSeleccionada.correo },
@@ -208,59 +225,121 @@ fun LoginScreen(
 }
 
 @Composable
-private fun FilaCuentaRecordada(
+private fun BurbujaUsuario(
     cuenta: UsuarioRecordado,
+    apiBaseUrl: String,
     onClick: () -> Unit,
     onOlvidar: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+    val fotoUrl = remember(cuenta.fotoPerfil, apiBaseUrl) { urlFoto(cuenta.fotoPerfil, apiBaseUrl) }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(60.dp)
     ) {
-        AvatarInicial(nombreOCorreo = cuenta.nombre.ifBlank { cuenta.correo })
-        Column(Modifier.weight(1f)) {
-            Text(
-                cuenta.nombre.ifBlank { cuenta.correo },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                cuenta.correo,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
+        Box(contentAlignment = Alignment.TopEnd) {
+            Surface(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onClick),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shadowElevation = 2.dp
+            ) {
+                AvatarConFoto(fotoUrl, cuenta.nombre, 56.dp)
+            }
+            Surface(
+                modifier = Modifier
+                    .size(20.dp)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onOlvidar),
+                color = MaterialTheme.colorScheme.errorContainer,
+                tonalElevation = 4.dp
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Quitar",
+                    modifier = Modifier.padding(4.dp),
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
         }
-        IconButton(onClick = onOlvidar) {
-            Icon(
-                Icons.Filled.Close,
-                contentDescription = "Olvidar esta cuenta",
-                tint = MaterialTheme.colorScheme.outline,
-            )
-        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = cuenta.nombre.split(" ").firstOrNull() ?: "",
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }
 
 @Composable
-private fun AvatarInicial(nombreOCorreo: String) {
+private fun BurbujaNuevaCuenta(onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(60.dp)
+    ) {
+        Surface(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onClick),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shadowElevation = 1.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Usar otra cuenta",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Otro",
+            style = MaterialTheme.typography.labelSmall
+        )
+    }
+}
+
+@Composable
+private fun AvatarConFoto(fotoUrl: String?, nombre: String, size: androidx.compose.ui.unit.Dp) {
+    if (fotoUrl != null) {
+        AsyncImage(
+            model = fotoUrl,
+            contentDescription = "Foto de $nombre",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+    } else {
+        AvatarInicial(nombreOCorreo = nombre, size = size)
+    }
+}
+
+@Composable
+private fun AvatarInicial(nombreOCorreo: String, size: androidx.compose.ui.unit.Dp = 40.dp) {
     val inicial = nombreOCorreo.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(size)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
-        if (inicial == "?") {
-            Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+        if (inicial == "?" || inicial == "") {
+            Icon(
+                Icons.Filled.Person,
+                contentDescription = null,
+                modifier = Modifier.size(size / 2),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         } else {
             Text(
                 inicial,
-                style = MaterialTheme.typography.titleMedium,
+                style = if (size < 48.dp) MaterialTheme.typography.titleSmall else MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )

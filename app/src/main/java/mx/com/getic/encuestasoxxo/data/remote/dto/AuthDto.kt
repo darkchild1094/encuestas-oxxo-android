@@ -16,6 +16,7 @@ data class UsuarioDto(
     val correo: String,
     val nombre_completo: String?,
     val foto_perfil: String?,
+    val genero: String? = "M", // "H" o "M"
     val plaza_id: Int?,
     val plaza_nombre: String?,
     val rol: String, // "ATI" | "WEBMASTER" | "PFS"

@@ -32,6 +32,15 @@ private val MIGRACION_1_2 = object : Migration(1, 2) {
     }
 }
 
+// Migracion 2 -> 3: agrega direccion y coordenadas al cache de tiendas.
+private val MIGRACION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `direccion` TEXT")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `latitud` REAL")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `longitud` REAL")
+    }
+}
+
 @Database(
     entities = [
         CuestionarioEntity::class,
@@ -40,7 +49,7 @@ private val MIGRACION_1_2 = object : Migration(1, 2) {
         RespuestaDetalleEntity::class,
         TiendaEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -57,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "encuestas_oxxo.db"
-                ).addMigrations(MIGRACION_1_2).build().also { instancia = it }
+                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3).build().also { instancia = it }
             }
     }
 }

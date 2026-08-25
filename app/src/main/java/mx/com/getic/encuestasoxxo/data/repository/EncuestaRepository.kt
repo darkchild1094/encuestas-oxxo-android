@@ -48,15 +48,16 @@ class EncuestaRepository(
         return try {
             val tiendas = api.tiendas(token(), plazaId)
             tiendaDao.borrarDe(plazaId)
-            tiendaDao.guardar(tiendas.map { TiendaEntity(it.id, plazaId, it.nombre, it.codigo) })
+            tiendaDao.guardar(tiendas.map { 
+                TiendaEntity(it.id, plazaId, it.nombre, it.codigo, it.direccion, it.latitud, it.longitud) 
+            })
             Timber.d("Tiendas de plaza $plazaId actualizadas desde servidor: ${tiendas.size}")
             tiendas
         } catch (e: Exception) {
             Timber.w(e, "Error obteniendo tiendas, usando cache local")
-            // El cache local no guarda datos de ATI (cambian poco y no
-            // bloquean la encuesta): sin señal, la tarjeta/selector de
-            // ATI simplemente no se muestra hasta que vuelva la conexion.
-            tiendaDao.obtenerPorPlaza(plazaId).map { TiendaDto(it.id, it.nombre, it.codigo, plazaId) }
+            tiendaDao.obtenerPorPlaza(plazaId).map { 
+                TiendaDto(it.id, it.nombre, it.codigo, plazaId, it.direccion, it.latitud, it.longitud) 
+            }
         }
     }
 
@@ -73,6 +74,14 @@ class EncuestaRepository(
         true
     } catch (e: Exception) {
         Timber.e(e, "Error asignando ATI a tienda $tiendaId")
+        false
+    }
+
+    suspend fun actualizarTienda(tienda: TiendaDto): Boolean = try {
+        api.actualizarTienda(token(), tienda)
+        true
+    } catch (e: Exception) {
+        Timber.e(e, "Error actualizando tienda ${tienda.id}")
         false
     }
 

@@ -33,6 +33,8 @@ import mx.com.getic.encuestasoxxo.ui.login.LoginScreen
 import mx.com.getic.encuestasoxxo.ui.login.LoginViewModel
 import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasScreen
 import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
+import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasScreen
+import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosScreen
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilScreen
@@ -45,6 +47,7 @@ object Rutas {
     const val HISTORIAL = "historial"
     const val USUARIOS = "usuarios"
     const val PREGUNTAS = "preguntas"
+    const val TIENDAS = "tiendas"
     const val RESPUESTAS = "respuestas"
     const val PERFIL = "perfil"
 }
@@ -82,6 +85,7 @@ fun NavGraph(container: AppContainer) {
             val viewModel = viewModel { factory.create(LoginViewModel::class.java) }
             LoginScreen(
                 viewModel = viewModel,
+                apiBaseUrl = BuildConfig.API_BASE_URL,
                 onLoginExitoso = { rol, debeCambiar ->
                     if (debeCambiar) {
                         navController.navigate(Rutas.CHANGE_PASSWORD) { popUpTo(Rutas.LOGIN) { inclusive = true } }
@@ -158,6 +162,21 @@ fun NavGraph(container: AppContainer) {
                     val viewModel = viewModel { factory.create(PreguntasViewModel::class.java) }
                     PreguntasScreen(
                         viewModel = viewModel,
+                        onAbrirMenu = abrirMenu,
+                    )
+                }
+            }
+        }
+
+        composable(Rutas.TIENDAS) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(TiendasViewModel::class.java) }
+                    TiendasScreen(
+                        viewModel = viewModel,
+                        sesion = sesion,
                         onAbrirMenu = abrirMenu,
                     )
                 }
@@ -301,6 +320,15 @@ private fun ConDrawer(
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PREGUNTAS) },
                     )
                 }
+                if (sesion.rol == "ATI") {
+                    NavigationDrawerItem(
+                        label = { Text("Tiendas") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.Store, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.TIENDAS) },
+                    )
+                }
+
                 if (sesion.gestionaUsuarios) {
                     NavigationDrawerItem(
                         label = { Text("Usuarios") },

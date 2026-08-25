@@ -24,6 +24,7 @@ class AuthRepository(
             usuariosRecordados.recordar(
                 correo = respuesta.usuario.correo,
                 nombre = respuesta.usuario.nombre_completo ?: respuesta.usuario.correo,
+                fotoPerfil = respuesta.usuario.foto_perfil,
             )
             ResultadoLogin.Ok(
                 rol = respuesta.usuario.rol,

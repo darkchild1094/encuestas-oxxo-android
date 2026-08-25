@@ -12,4 +12,7 @@ data class TiendaEntity(
     val plazaId: Int,
     val nombre: String,
     val codigo: String,
+    val direccion: String? = null,
+    val latitud: Double? = null,
+    val longitud: Double? = null,
 )

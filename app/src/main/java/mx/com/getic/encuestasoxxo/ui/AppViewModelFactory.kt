@@ -10,6 +10,7 @@ import mx.com.getic.encuestasoxxo.ui.login.ChangePasswordViewModel
 import mx.com.getic.encuestasoxxo.ui.login.LoginViewModel
 import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
+import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
 
 /**
@@ -43,6 +44,10 @@ class AppViewModelFactory(
             }
             UsuariosViewModel::class.java -> {
                 UsuariosViewModel(container.usuarioRepository, container.encuestaRepository) as T
+            }
+            TiendasViewModel::class.java -> {
+                requireNotNull(sesion)
+                TiendasViewModel(container.encuestaRepository, sesion) as T
             }
             PerfilViewModel::class.java -> {
                 requireNotNull(sesion)

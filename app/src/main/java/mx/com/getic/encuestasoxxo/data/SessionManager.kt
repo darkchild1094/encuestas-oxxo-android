@@ -23,6 +23,7 @@ class SessionManager(private val context: Context) {
         val CORREO = stringPreferencesKey("correo")
         val NOMBRE = stringPreferencesKey("nombre_completo")
         val FOTO = stringPreferencesKey("foto_perfil")
+        val GENERO = stringPreferencesKey("genero")
         val ROL = stringPreferencesKey("rol")
         val GESTIONA_PREGUNTAS = booleanPreferencesKey("gestiona_preguntas")
         val GESTIONA_USUARIOS = booleanPreferencesKey("gestiona_usuarios")
@@ -40,6 +41,7 @@ class SessionManager(private val context: Context) {
             prefs[Claves.CORREO] = usuario.correo
             prefs[Claves.NOMBRE] = usuario.nombre_completo ?: ""
             prefs[Claves.FOTO] = usuario.foto_perfil ?: ""
+            prefs[Claves.GENERO] = usuario.genero ?: "M"
             prefs[Claves.ROL] = usuario.rol
             prefs[Claves.GESTIONA_PREGUNTAS] = usuario.gestiona_preguntas
             prefs[Claves.GESTIONA_USUARIOS] = usuario.gestiona_usuarios
@@ -74,6 +76,7 @@ class SessionManager(private val context: Context) {
             esEncuestable = prefs[Claves.ES_ENCUESTABLE] ?: false,
             veResultadosTiendas = prefs[Claves.VE_RESULTADOS] ?: false,
             debeCambiarPassword = prefs[Claves.DEBE_CAMBIAR_PASS] ?: false,
+            genero = prefs[Claves.GENERO] ?: "M",
             plazaId = prefs[Claves.PLAZA_ID],
             plazaNombre = prefs[Claves.PLAZA_NOMBRE],
         )
@@ -88,6 +91,7 @@ data class Sesion(
     val correo: String,
     val nombreCompleto: String,
     val fotoPerfil: String?,
+    val genero: String? = "M",
     val rol: String,
     val gestionaPreguntas: Boolean,
     val gestionaUsuarios: Boolean,

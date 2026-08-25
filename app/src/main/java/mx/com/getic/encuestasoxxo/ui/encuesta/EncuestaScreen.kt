@@ -1,11 +1,14 @@
 package mx.com.getic.encuestasoxxo.ui.encuesta
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Menu
@@ -16,10 +19,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import mx.com.getic.encuestasoxxo.R
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
@@ -80,45 +89,20 @@ fun EncuestaScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                item {
-                    val mostrarSelectores = !estado.plazaFija && sesion.rol != "ATI" && sesion.rol != "WEBMASTER"
-                    
-                    if (estado.plazaFija || !mostrarSelectores) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (sesion.plazaId != null) {
-                                Text(
-                                    "Plaza: ${sesion.plazaNombre ?: ""}",
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                            } else {
-                                Text(
-                                    "Error: No tienes una plaza asignada en tu perfil.",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-
-                            BuscadorTienda(
-                                tiendas = estado.tiendas,
-                                seleccionId = estado.tiendaId,
-                                onSeleccionar = viewModel::onTiendaSeleccionada,
-                            )
-                        }
-                    } else {
-                        SelectorUnidad(
-                            estado = estado,
-                            onNegocio = viewModel::onNegocioSeleccionado,
-                            onRegion = viewModel::onRegionSeleccionada,
-                            onPlaza = viewModel::onPlazaSeleccionada,
-                            onTienda = viewModel::onTiendaSeleccionada,
+                if (estado.tiendaSeleccionada != null) {
+                    item {
+                        val plaza = estado.plazas.firstOrNull { it.id == estado.tiendaSeleccionada.plaza_id }
+                        val pNombre = plaza?.nombre ?: sesion.plazaNombre ?: ""
+                        HeaderTienda(
+                            tienda = estado.tiendaSeleccionada,
+                            plazaNombre = pNombre,
+                            onCambiarTienda = { viewModel.onTiendaSeleccionada(-1) }
                         )
                     }
-                }
 
-                if (estado.tiendaSeleccionada != null) {
                     item {
                         SaludoAti(
                             tienda = estado.tiendaSeleccionada,
@@ -128,6 +112,49 @@ fun EncuestaScreen(
                             apiBaseUrl = apiBaseUrl,
                             onSeleccionarAti = viewModel::onAtiSeleccionado,
                         )
+                    }
+
+                    item {
+                        Text(
+                            text = "Ayúdame a responder las siguientes preguntas por favor:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    item {
+                        val mostrarSelectores = !estado.plazaFija && sesion.rol != "ATI" && sesion.rol != "WEBMASTER"
+
+                        if (estado.plazaFija || !mostrarSelectores) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (sesion.plazaId != null) {
+                                    Text(
+                                        "Plaza: ${sesion.plazaNombre ?: ""}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                    )
+                                } else {
+                                    Text(
+                                        "Error: No tienes una plaza asignada en tu perfil.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                                BuscadorTienda(
+                                    tiendas = estado.tiendas,
+                                    seleccionId = estado.tiendaId,
+                                    onSeleccionar = viewModel::onTiendaSeleccionada,
+                                )
+                            }
+                        } else {
+                            SelectorUnidad(
+                                estado = estado,
+                                onNegocio = viewModel::onNegocioSeleccionado,
+                                onRegion = viewModel::onRegionSeleccionada,
+                                onPlaza = viewModel::onPlazaSeleccionada,
+                                onTienda = viewModel::onTiendaSeleccionada,
+                            )
+                        }
                     }
                 }
 
@@ -141,13 +168,22 @@ fun EncuestaScreen(
 
                 items(estado.preguntas, key = { it.id }) { pregunta ->
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(pregunta.texto, style = MaterialTheme.typography.titleMedium)
-
-                        // Solo la pregunta del PFS lleva la foto del tecnico
-                        // que esta contestando -- es quien atendio la
-                        // incidencia de la que habla esa pregunta puntual.
                         if (esPreguntaDePfs(pregunta.texto)) {
-                            FotoTecnico(sesion, apiBaseUrl)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) { urlFoto(sesion.fotoPerfil, apiBaseUrl) }
+                                AvatarGafete(fotoUrl, width = 100.dp)
+                                Text(
+                                    text = pregunta.texto,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        } else {
+                            Text(pregunta.texto, style = MaterialTheme.typography.titleMedium)
                         }
 
                         NpsFaceSelector(
@@ -200,6 +236,53 @@ fun EncuestaScreen(
 }
 
 @Composable
+private fun HeaderTienda(
+    tienda: TiendaDto,
+    plazaNombre: String,
+    onCambiarTienda: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo_oxxo),
+            contentDescription = "OXXO",
+            modifier = Modifier.height(44.dp)
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = tienda.nombre.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (plazaNombre.isNotBlank()) {
+                Text(
+                    text = "PLAZA $plazaNombre".uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        TextButton(
+            onClick = onCambiarTienda,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text("CAMBIAR", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
 private fun SaludoAti(
     tienda: TiendaDto,
     atisDisponibles: List<AtiDto>,
@@ -215,17 +298,21 @@ private fun SaludoAti(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                AvatarCircular(urlFoto(tienda.ati_foto, apiBaseUrl), size = 64.dp)
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                AvatarCircular(urlFoto(tienda.ati_foto, apiBaseUrl), size = 72.dp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    val labelAsesor = when {
+                        tienda.ati_genero == "H" -> "Asesor"
+                        tienda.ati_genero == "M" -> "Asesora"
+                        // Heurística simple: si el nombre termina en 'a', es mujer.
+                        tienda.ati_nombre?.trim()?.endsWith("a", ignoreCase = true) == true -> "Asesora"
+                        else -> "Asesor"
+                    }
                     Text(
-                        "¡Hola! Soy ${tienda.ati_nombre ?: "tu ATI"}, tu Asesora de TI",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    )
-                    Text(
-                        "Estoy para apoyarte cuando necesites ayuda con los servicios y equipos de la tienda.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "¡Hola! Soy ${tienda.ati_nombre ?: "tu ATI"}, tu $labelAsesor de TI y estoy para apoyarte cuando necesites ayuda con los servicios y equipos de la tienda.",
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
@@ -274,25 +361,41 @@ private fun SaludoAti(
 }
 
 @Composable
-private fun FotoTecnico(sesion: Sesion, apiBaseUrl: String) {
-    val nombreAMostrar = sesion.nombreCompleto.ifBlank { sesion.correo }.ifBlank { "Usuario sin nombre" }
-    val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) { urlFoto(sesion.fotoPerfil, apiBaseUrl) }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+private fun AvatarGafete(fotoUrl: String?, width: Dp) {
+    Surface(
+        modifier = Modifier
+            .width(width)
+            .aspectRatio(0.63f), // Proporción vertical típica de un gafete
+        shape = RoundedCornerShape(2.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, Color.LightGray)
     ) {
-        AvatarCircular(fotoUrl, size = 48.dp)
-        Column {
-            Text(nombreAMostrar, style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text(sesion.rol, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        if (fotoUrl != null) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = "Gafete",
+                contentScale = ContentScale.Fit, // Asegura que se vea completa
+                modifier = Modifier.fillMaxSize().padding(2.dp),
+                onError = { errorState ->
+                    Timber.e(errorState.result.throwable, "COIL_DEBUG: Falló la carga desde $fotoUrl")
+                }
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(width / 3),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun AvatarCircular(fotoUrl: String?, size: androidx.compose.ui.unit.Dp) {
+private fun AvatarCircular(fotoUrl: String?, size: Dp) {
     Surface(
         modifier = Modifier.size(size),
         shape = CircleShape,

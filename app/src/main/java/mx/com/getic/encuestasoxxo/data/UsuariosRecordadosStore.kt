@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.usuariosRecordadosDataStore by preferencesDataStore(name = "usuarios_recordados")
 
-data class UsuarioRecordado(val correo: String, val nombre: String)
+data class UsuarioRecordado(val correo: String, val nombre: String, val fotoPerfil: String?)
 
 /**
  * Recuerda, por dispositivo, los correos que ya han iniciado sesion en la
@@ -32,12 +32,12 @@ class UsuariosRecordadosStore(private val context: Context) {
     private val separadorCampo = "\u0001"
     private val maxRecordados = 6
 
-    suspend fun recordar(correo: String, nombre: String) {
+    suspend fun recordar(correo: String, nombre: String, fotoPerfil: String?) {
         if (correo.isBlank()) return
         context.usuariosRecordadosDataStore.edit { prefs ->
             val actuales = parsear(prefs[Claves.LISTA])
             val filtrados = actuales.filterNot { it.correo.equals(correo, ignoreCase = true) }
-            val nuevaLista = listOf(UsuarioRecordado(correo, nombre)) + filtrados
+            val nuevaLista = listOf(UsuarioRecordado(correo, nombre, fotoPerfil)) + filtrados
             prefs[Claves.LISTA] = serializar(nuevaLista.take(maxRecordados))
         }
     }
@@ -58,10 +58,14 @@ class UsuariosRecordadosStore(private val context: Context) {
             val partes = linea.split(separadorCampo)
             val correo = partes.getOrNull(0)
             if (correo.isNullOrBlank()) null
-            else UsuarioRecordado(correo = correo, nombre = partes.getOrElse(1) { "" })
+            else UsuarioRecordado(
+                correo = correo,
+                nombre = partes.getOrElse(1) { "" },
+                fotoPerfil = partes.getOrNull(2)?.takeIf { it.isNotBlank() }
+            )
         }
     }
 
     private fun serializar(lista: List<UsuarioRecordado>): String =
-        lista.joinToString(separadorUsuario) { "${it.correo}$separadorCampo${it.nombre}" }
+        lista.joinToString(separadorUsuario) { "${it.correo}$separadorCampo${it.nombre}$separadorCampo${it.fotoPerfil ?: ""}" }
 }

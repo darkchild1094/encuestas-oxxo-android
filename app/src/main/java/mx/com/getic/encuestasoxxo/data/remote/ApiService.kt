@@ -27,6 +27,9 @@ interface ApiService {
     @POST("tiendas/asignar-ati")
     suspend fun asignarAti(@Header("Authorization") token: String, @Body body: AsignarAtiRequest)
 
+    @POST("tiendas/edit")
+    suspend fun actualizarTienda(@Header("Authorization") token: String, @Body body: TiendaDto): OperacionUsuarioResponse
+
     @GET("cuestionario")
     suspend fun obtenerCuestionario(
         @Header("Authorization") token: String,

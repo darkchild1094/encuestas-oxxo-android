@@ -8,17 +8,22 @@ data class TiendaDto(
     val nombre: String,
     val codigo: String,
     val plaza_id: Int = 0,
+    val direccion: String? = null,
+    val latitud: Double? = null,
+    val longitud: Double? = null,
     // Vienen null si la tienda no tiene ATI asignado (comun fuera de
     // Valles): eso es la señal para que la UI muestre el selector.
     val ati_usuario_id: Int? = null,
     val ati_nombre: String? = null,
     val ati_foto: String? = null,
+    val ati_genero: String? = "M", // "H" o "M"
 )
 
 data class AtiDto(
     val id: Int,
     val nombre_completo: String,
     val foto_perfil: String?,
+    val genero: String? = "M", // "H" o "M"
 )
 
 data class AsignarAtiRequest(
