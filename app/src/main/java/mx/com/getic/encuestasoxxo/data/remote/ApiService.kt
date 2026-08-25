@@ -21,6 +21,12 @@ interface ApiService {
     @GET("tiendas")
     suspend fun tiendas(@Header("Authorization") token: String, @Query("plaza_id") plazaId: Int): List<TiendaDto>
 
+    @GET("tiendas/ati-disponibles")
+    suspend fun atisDisponibles(@Header("Authorization") token: String, @Query("plaza_id") plazaId: Int): List<AtiDto>
+
+    @POST("tiendas/asignar-ati")
+    suspend fun asignarAti(@Header("Authorization") token: String, @Body body: AsignarAtiRequest)
+
     @GET("cuestionario")
     suspend fun obtenerCuestionario(
         @Header("Authorization") token: String,

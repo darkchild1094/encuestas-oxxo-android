@@ -21,8 +21,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import mx.com.getic.encuestasoxxo.data.Sesion
+import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
 import timber.log.Timber
+
+// La pregunta del PFS no tiene un flag propio en el schema (ver
+// nota en pregunta.texto): se identifica por texto. Si en algun
+// momento se agrega una columna dedicada (ej. tipo_foto), cambiar
+// este helper y ya -- toda la UI lo usa desde aqui.
+private fun esPreguntaDePfs(texto: String): Boolean =
+    texto.contains("PFS", ignoreCase = true) || texto.contains("Prestador de Field Service", ignoreCase = true)
+
+private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
+    if (rutaFoto.isNullOrBlank()) return null
+    if (rutaFoto.startsWith("http")) return rutaFoto
+    val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
+    return "$base/public/$rutaFoto"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,11 +84,9 @@ fun EncuestaScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                item { EncabezadoAtencion(sesion, apiBaseUrl) }
-
                 item {
                     val mostrarSelectores = !estado.plazaFija && sesion.rol != "ATI" && sesion.rol != "WEBMASTER"
                     
@@ -109,6 +122,19 @@ fun EncuestaScreen(
                     }
                 }
 
+                if (estado.tiendaSeleccionada != null) {
+                    item {
+                        SaludoAti(
+                            tienda = estado.tiendaSeleccionada,
+                            atisDisponibles = estado.atisDisponibles,
+                            cargandoAtis = estado.cargandoAtis,
+                            asignandoAti = estado.asignandoAti,
+                            apiBaseUrl = apiBaseUrl,
+                            onSeleccionarAti = viewModel::onAtiSeleccionado,
+                        )
+                    }
+                }
+
                 if (estado.cargandoPreguntas) {
                     item {
                         Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -118,8 +144,16 @@ fun EncuestaScreen(
                 }
 
                 items(estado.preguntas, key = { it.id }) { pregunta ->
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(pregunta.texto, style = MaterialTheme.typography.titleMedium)
+
+                        // Solo la pregunta del PFS lleva la foto del tecnico
+                        // que esta contestando -- es quien atendio la
+                        // incidencia de la que habla esa pregunta puntual.
+                        if (esPreguntaDePfs(pregunta.texto)) {
+                            FotoTecnico(sesion, apiBaseUrl)
+                        }
+
                         NpsFaceSelector(
                             seleccion = estado.calificaciones[pregunta.id],
                             onSeleccionar = { viewModel.onCalificar(pregunta.id, it) },
@@ -128,14 +162,25 @@ fun EncuestaScreen(
                 }
 
                 if (estado.preguntas.isNotEmpty()) {
+                    // Pregunta abierta, fija siempre al final (despues de
+                    // la calificacion general de TI): reutiliza
+                    // encuesta.comentario, que ya viaja end-to-end al
+                    // backend -- no es una fila de `pregunta`.
                     item {
-                        OutlinedTextField(
-                            value = estado.comentario,
-                            onValueChange = viewModel::onComentarioChange,
-                            label = { Text("Comentarios (opcional)") },
-                            minLines = 3,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "¿Qué podríamos mejorar en el servicio de TI para facilitar tu operación diaria en tienda?",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            OutlinedTextField(
+                                value = estado.comentario,
+                                onValueChange = viewModel::onComentarioChange,
+                                placeholder = { Text("Escriba sus comentarios aquí...") },
+                                minLines = 3,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium,
+                            )
+                        }
                     }
                     item {
                         Button(
@@ -159,79 +204,128 @@ fun EncuestaScreen(
 }
 
 @Composable
-private fun EncabezadoAtencion(sesion: Sesion, apiBaseUrl: String) {
-    val nombreAMostrar = sesion.nombreCompleto.ifBlank { sesion.correo }.ifBlank { "Usuario sin nombre" }
-
-    val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) {
-        sesion.fotoPerfil?.let { perfil ->
-            if (perfil.startsWith("http")) {
-                perfil
-            } else {
-                val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
-                "$base/$perfil"
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Surface(
-            modifier = Modifier.size(90.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shadowElevation = 2.dp
-        ) {
-            if (fotoUrl != null) {
-                AsyncImage(
-                    model = fotoUrl,
-                    contentDescription = "Foto de perfil",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                    onLoading = {
-                        Timber.d("COIL_DEBUG: Cargando imagen desde $fotoUrl")
-                    },
-                    onSuccess = {
-                        Timber.d("COIL_DEBUG: Imagen cargada con éxito desde $fotoUrl")
-                    },
-                    onError = { errorState ->
-                        Timber.e(errorState.result.throwable, "COIL_DEBUG: Falló la carga. Razón: ${errorState.result.throwable.message}")
-                    }
-                )
-            } else {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(56.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+private fun SaludoAti(
+    tienda: TiendaDto,
+    atisDisponibles: List<AtiDto>,
+    cargandoAtis: Boolean,
+    asignandoAti: Boolean,
+    apiBaseUrl: String,
+    onSeleccionarAti: (Int) -> Unit,
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        if (tienda.ati_usuario_id != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                AvatarCircular(urlFoto(tienda.ati_foto, apiBaseUrl), size = 64.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        "¡Hola! Soy ${tienda.ati_nombre ?: "tu ATI"}, tu Asesora de TI",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    )
+                    Text(
+                        "Estoy para apoyarte cuando necesites ayuda con los servicios y equipos de la tienda.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Te atendió:",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Text(
-                text = nombreAMostrar,
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-            )
-            Text(
-                text = sesion.rol,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    "Esta tienda todavía no tiene un ATI asignado. Selecciona quién te atiende:",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (cargandoAtis) {
+                    Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                } else if (atisDisponibles.isEmpty()) {
+                    Text(
+                        "No hay ATIs registrados para la plaza de esta tienda.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else {
+                    atisDisponibles.forEach { ati ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.medium)
+                                .clickable(enabled = !asignandoAti) { onSeleccionarAti(ati.id) }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            AvatarCircular(urlFoto(ati.foto_perfil, apiBaseUrl), size = 44.dp)
+                            Text(ati.nombre_completo, style = MaterialTheme.typography.bodyLarge)
+                            if (asignandoAti) {
+                                Spacer(Modifier.weight(1f))
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
+@Composable
+private fun FotoTecnico(sesion: Sesion, apiBaseUrl: String) {
+    val nombreAMostrar = sesion.nombreCompleto.ifBlank { sesion.correo }.ifBlank { "Usuario sin nombre" }
+    val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) { urlFoto(sesion.fotoPerfil, apiBaseUrl) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        AvatarCircular(fotoUrl, size = 48.dp)
+        Column {
+            Text(nombreAMostrar, style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text(sesion.rol, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        }
+    }
+}
+
+@Composable
+private fun AvatarCircular(fotoUrl: String?, size: androidx.compose.ui.unit.Dp) {
+    Surface(
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shadowElevation = 1.dp,
+    ) {
+        if (fotoUrl != null) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                onError = { errorState ->
+                    Timber.e(errorState.result.throwable, "COIL_DEBUG: Falló la carga desde $fotoUrl")
+                }
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(size / 2),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun BuscadorTienda(
