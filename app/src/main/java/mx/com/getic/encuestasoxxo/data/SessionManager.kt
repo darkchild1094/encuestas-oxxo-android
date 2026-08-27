@@ -32,6 +32,7 @@ class SessionManager(private val context: Context) {
         val DEBE_CAMBIAR_PASS = booleanPreferencesKey("debe_cambiar_password")
         val PLAZA_ID = intPreferencesKey("plaza_id")
         val PLAZA_NOMBRE = stringPreferencesKey("plaza_nombre")
+        val SYNC_REALIZADO = booleanPreferencesKey("sync_realizado")
     }
 
     suspend fun guardarSesion(token: String, usuario: UsuarioDto) {
@@ -55,6 +56,13 @@ class SessionManager(private val context: Context) {
                 prefs.remove(Claves.PLAZA_ID)
                 prefs.remove(Claves.PLAZA_NOMBRE)
             }
+            prefs[Claves.SYNC_REALIZADO] = false
+        }
+    }
+
+    suspend fun marcarSyncRealizado(realizado: Boolean = true) {
+        context.dataStore.edit { prefs ->
+            prefs[Claves.SYNC_REALIZADO] = realizado
         }
     }
 
@@ -79,6 +87,7 @@ class SessionManager(private val context: Context) {
             genero = prefs[Claves.GENERO] ?: "M",
             plazaId = prefs[Claves.PLAZA_ID],
             plazaNombre = prefs[Claves.PLAZA_NOMBRE],
+            syncRealizado = prefs[Claves.SYNC_REALIZADO] ?: false,
         )
     }
 
@@ -100,6 +109,7 @@ data class Sesion(
     val debeCambiarPassword: Boolean,
     val plazaId: Int? = null,
     val plazaNombre: String? = null,
+    val syncRealizado: Boolean = false,
 ) {
     // Misma regla que ya usa el panel web para decidir la pantalla
     // de inicio: si puede ser encuestado, arranca en Encuesta; si no

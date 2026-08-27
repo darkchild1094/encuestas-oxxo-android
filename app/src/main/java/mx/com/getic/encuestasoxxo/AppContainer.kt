@@ -10,6 +10,9 @@ import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 import mx.com.getic.encuestasoxxo.data.repository.EstadisticasRepository
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
+import mx.com.getic.encuestasoxxo.data.repository.CatalogoRepository
+import mx.com.getic.encuestasoxxo.domain.EncuestaSyncManager
+import mx.com.getic.encuestasoxxo.domain.GeneralSyncManager
 
 // Service Locator simple: un solo lugar donde se arman las
 // dependencias, sin librerias de DI. Para el tamano de esta app
@@ -34,6 +37,18 @@ class AppContainer(context: Context) {
     }
 
     val usuarioRepository: UsuarioRepository by lazy {
-        UsuarioRepository(api, sessionManager)
+        UsuarioRepository(api, sessionManager, database.usuarioDao())
+    }
+
+    val catalogoRepository: CatalogoRepository by lazy {
+        CatalogoRepository(api, database.catalogoDao())
+    }
+
+    val encuestaSyncManager: EncuestaSyncManager by lazy {
+        EncuestaSyncManager(database, api)
+    }
+
+    val generalSyncManager: GeneralSyncManager by lazy {
+        GeneralSyncManager(database, api)
     }
 }

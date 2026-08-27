@@ -1,0 +1,13 @@
+package mx.com.getic.encuestasoxxo.data.local.entities
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "plaza_cache")
+data class PlazaEntity(
+    @PrimaryKey val id: Int,
+    val regionId: Int,
+    val nombre: String,
+    val cr: String?,
+    val esDefault: Boolean
+)

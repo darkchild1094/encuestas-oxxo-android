@@ -64,7 +64,10 @@ class EncuestaViewModel(
                 plazaId = plazaAsignada, 
                 cargandoCatalogo = false
             )
-            plazaAsignada?.let { cargarTiendas(it) }
+            plazaAsignada?.let { 
+                cargarTiendas(it)
+                cargarAtisDisponibles(it)
+            }
         } else {
             cargarNegocios()
         }
@@ -140,6 +143,7 @@ class EncuestaViewModel(
     fun onPlazaSeleccionada(id: Int) {
         estado = estado.copy(plazaId = id)
         cargarTiendas(id)
+        cargarAtisDisponibles(id)
     }
 
     fun onTiendaSeleccionada(id: Int) {
@@ -155,7 +159,7 @@ class EncuestaViewModel(
             return
         }
         val tienda = estado.tiendas.firstOrNull { it.id == id }
-        estado = estado.copy(tiendaId = id, tiendaSeleccionada = tienda, atisDisponibles = emptyList())
+        estado = estado.copy(tiendaId = id, tiendaSeleccionada = tienda)
         cargarPreguntas()
 
         // Si la tienda no trae ATI asignado (comun fuera de Valles),
@@ -166,8 +170,11 @@ class EncuestaViewModel(
     }
 
     private fun cargarAtisDisponibles(plazaId: Int) {
-        estado = estado.copy(cargandoAtis = true)
         viewModelScope.launch {
+            // Si ya tenemos los ATIs de esta plaza en el estado, no re-cargamos para evitar parpadeos
+            if (estado.atisDisponibles.isNotEmpty() && estado.plazaId == plazaId) return@launch
+
+            estado = estado.copy(cargandoAtis = true)
             val atis = repository.atisDisponibles(plazaId)
             estado = estado.copy(atisDisponibles = atis, cargandoAtis = false)
         }

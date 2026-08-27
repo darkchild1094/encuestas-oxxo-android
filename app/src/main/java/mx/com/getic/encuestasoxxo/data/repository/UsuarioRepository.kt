@@ -1,6 +1,8 @@
 package mx.com.getic.encuestasoxxo.data.repository
 
 import mx.com.getic.encuestasoxxo.data.SessionManager
+import mx.com.getic.encuestasoxxo.data.local.dao.UsuarioDao
+import mx.com.getic.encuestasoxxo.data.local.entities.UsuarioEntity
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
 import mx.com.getic.encuestasoxxo.data.remote.dto.*
 
@@ -15,12 +17,57 @@ import java.io.FileOutputStream
 
 class UsuarioRepository(
     private val api: ApiService,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val usuarioDao: UsuarioDao? = null
 ) {
     private suspend fun getToken() = "Bearer ${sessionManager.sesionActualBloqueante()?.token}"
 
-    suspend fun obtenerUsuarios(): List<UsuarioDto> {
-        return api.obtenerUsuarios(getToken())
+    suspend fun obtenerUsuarios(refrescar: Boolean = false): List<UsuarioDto> {
+        if (!refrescar && usuarioDao != null) {
+            val cache = usuarioDao.obtenerUsuarios()
+            if (cache.isNotEmpty()) {
+                return cache.map { u ->
+                    UsuarioDto(
+                        id = u.id,
+                        correo = u.correo,
+                        nombre_completo = u.nombreCompleto,
+                        foto_perfil = u.fotoPerfil,
+                        genero = u.genero,
+                        plaza_id = u.plazaId,
+                        plaza_nombre = u.plazaNombre,
+                        rol = u.rol,
+                        gestiona_preguntas = u.gestionaPreguntas,
+                        gestiona_usuarios = u.gestionaUsuarios,
+                        es_encuestable = u.esEncuestable,
+                        ve_resultados_tiendas = u.veResultadosTiendas
+                    )
+                }
+            }
+        }
+        
+        val remote = api.obtenerUsuarios(getToken())
+        
+        usuarioDao?.let { dao ->
+            dao.borrarUsuarios()
+            dao.guardarUsuarios(remote.map { u ->
+                UsuarioEntity(
+                    id = u.id,
+                    correo = u.correo,
+                    nombreCompleto = u.nombre_completo,
+                    fotoPerfil = u.foto_perfil,
+                    genero = u.genero,
+                    plazaId = u.plaza_id,
+                    plazaNombre = u.plaza_nombre,
+                    rol = u.rol,
+                    gestionaPreguntas = u.gestiona_preguntas,
+                    gestionaUsuarios = u.gestiona_usuarios,
+                    esEncuestable = u.es_encuestable,
+                    veResultadosTiendas = u.ve_resultados_tiendas
+                )
+            })
+        }
+        
+        return remote
     }
 
     suspend fun obtenerRoles(): List<RolDto> {

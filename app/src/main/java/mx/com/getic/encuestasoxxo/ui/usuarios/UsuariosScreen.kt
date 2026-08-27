@@ -12,11 +12,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -41,11 +44,11 @@ class UsuariosViewModel(
 
     init { cargar() }
 
-    fun cargar() {
+    fun cargar(refrescar: Boolean = false) {
         cargando = true
         viewModelScope.launch {
             try {
-                usuarios = repo.obtenerUsuarios()
+                usuarios = repo.obtenerUsuarios(refrescar = refrescar)
                 roles = repo.obtenerRoles()
                 val negocios = encuestaRepo.negocios()
                 if (negocios.isNotEmpty()) {
@@ -66,7 +69,7 @@ class UsuariosViewModel(
         viewModelScope.launch {
             try {
                 val res = repo.crearUsuario(correo, nombre, rolId, plazaId, password, foto)
-                if (res.success) cargar() else error = res.error
+                if (res.success) cargar(true) else error = res.error
             } catch (e: Exception) { error = "Error de red" }
         }
     }
@@ -75,7 +78,7 @@ class UsuariosViewModel(
         viewModelScope.launch {
             try {
                 val res = repo.editarUsuario(id, nombre, rolId, plazaId, password, foto)
-                if (res.success) cargar() else error = res.error
+                if (res.success) cargar(true) else error = res.error
             } catch (e: Exception) { error = "Error de red" }
         }
     }
@@ -88,7 +91,7 @@ class UsuariosViewModel(
         viewModelScope.launch {
             try {
                 val res = repo.eliminarUsuario(id)
-                if (res.success) cargar() else error = res.error
+                if (res.success) cargar(true) else error = res.error
             } catch (e: Exception) { error = "Error de red" }
         }
     }
@@ -103,6 +106,19 @@ fun UsuariosScreen(
 ) {
     var mostrarDialogo by remember { mutableStateOf<UsuarioDto?>(null) }
     var modoCrear by remember { mutableStateOf(false) }
+    
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.cargar(refrescar = true)
+        }
+    }
+    
+    LaunchedEffect(viewModel.cargando) {
+        if (!viewModel.cargando) {
+            // pullToRefreshState.endRefresh()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -119,26 +135,38 @@ fun UsuariosScreen(
             }
         }
     ) { padding ->
-        if (viewModel.cargando) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(8.dp)) {
-                items(viewModel.usuarios) { u ->
-                    ListItem(
-                        headlineContent = { Text(u.nombre_completo ?: u.correo ?: "S/N") },
-                        supportingContent = { Text("${u.rol} | ${u.plaza_nombre ?: "Sin plaza"}") },
-                        trailingContent = {
-                            Row {
-                                IconButton(onClick = { mostrarDialogo = u }) { Icon(Icons.Default.Edit, null) }
-                                IconButton(onClick = { viewModel.eliminar(u.id) }) { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
+        ) {
+            if (viewModel.cargando && !pullToRefreshState.isRefreshing) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+                    items(viewModel.usuarios) { u ->
+                        ListItem(
+                            headlineContent = { Text(u.nombre_completo ?: u.correo ?: "S/N") },
+                            supportingContent = { Text("${u.rol} | ${u.plaza_nombre ?: "Sin plaza"}") },
+                            trailingContent = {
+                                Row {
+                                    IconButton(onClick = { mostrarDialogo = u }) { Icon(Icons.Default.Edit, null) }
+                                    IconButton(onClick = { viewModel.eliminar(u.id) }) { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                                }
                             }
-                        }
-                    )
-                    HorizontalDivider()
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
         if (modoCrear) {

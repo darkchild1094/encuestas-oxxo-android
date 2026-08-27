@@ -9,72 +9,120 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.com.getic.encuestasoxxo.data.remote.EncuestaPFSDto
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PFSModuloScreen(
     viewModel: PFSModuloViewModel,
+    onAbrirMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var mostrarDetalles by remember { mutableStateOf<String?>(null) }
     
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.cargarEncuestasPendientes()
+        }
+    }
+    
+    LaunchedEffect(uiState.cargando) {
+        if (!uiState.cargando) {
+            // pullToRefreshState.endRefresh()
+        }
+    }
+    
     LaunchedEffect(Unit) {
         viewModel.cargarEncuestasPendientes()
     }
     
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-        HeaderPFS(
-            totalEncuestas = uiState.totalEncuestas,
-            onRefresh = { viewModel.cargarEncuestasPendientes() }
-        )
-        
-        when {
-            uiState.cargando -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            uiState.error != null -> {
-                ErrorBox(
-                    mensaje = uiState.error ?: "Error desconocido",
-                    onRetry = { viewModel.cargarEncuestasPendientes() }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Estado de Encuestas") },
+                navigationIcon = {
+                    IconButton(onClick = onAbrirMenu) {
+                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1976D2),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
                 )
-            }
-            uiState.encuestas.isEmpty() -> {
-                EmptyStateBox()
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp)
-                ) {
-                    items(uiState.encuestas) { encuesta ->
-                        EncuestaCard(
-                            encuesta = encuesta,
-                            onVerDetalles = { mostrarDetalles = encuesta.id },
-                            onReintentar = { viewModel.reintentar(encuesta.id) }
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
+        ) {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF5F5F5))
+            ) {
+                HeaderPFS(
+                    totalEncuestas = uiState.totalEncuestas,
+                    onRefresh = { viewModel.cargarEncuestasPendientes() }
+                )
+                
+                when {
+                    uiState.cargando && !pullToRefreshState.isRefreshing -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    uiState.error != null -> {
+                        ErrorBox(
+                            mensaje = uiState.error ?: "Error desconocido",
+                            onRetry = { viewModel.cargarEncuestasPendientes() }
                         )
+                    }
+                    uiState.encuestas.isEmpty() -> {
+                        EmptyStateBox()
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(vertical = 16.dp)
+                        ) {
+                            items(uiState.encuestas) { encuesta ->
+                                EncuestaCard(
+                                    encuesta = encuesta,
+                                    onVerDetalles = { mostrarDetalles = encuesta.id },
+                                    onReintentar = { viewModel.reintentar(encuesta.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
     
@@ -109,13 +157,13 @@ private fun HeaderPFS(
                 Text(
                     text = "Estado de Encuestas",
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "Tus encuestas capturadas (todas las tiendas)",
                     color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp
+                    fontSize = 13.sp
                 )
             }
             
@@ -163,19 +211,19 @@ private fun EncuestaCard(
     onVerDetalles: () -> Unit,
     onReintentar: () -> Unit
 ) {
-    val estadoColor = when (encuesta.estado) {
-        "exito" -> Color(0xFF4CAF50)
-        "error" -> Color(0xFFF44336)
-        "enviando" -> Color(0xFFFFC107)
+    val estadoColor = when {
+        encuesta.sincronizado || encuesta.estado == "exito" -> Color(0xFF4CAF50)
+        encuesta.estado == "error" -> Color(0xFFF44336)
+        encuesta.estado == "enviando" -> Color(0xFFFFC107)
         else -> Color(0xFF9E9E9E)
     }
     
-    val estadoTexto = when (encuesta.estado) {
-        "exito" -> "✓ Enviada"
-        "error" -> "✗ Error"
-        "enviando" -> "↻ Enviando"
-        "pendiente" -> "○ Pendiente"
-        else -> encuesta.estado ?: "Desconocido"
+    val estadoTexto = when {
+        encuesta.sincronizado || encuesta.estado == "exito" -> "✓ Enviada"
+        encuesta.estado == "error" -> "✗ Error"
+        encuesta.estado == "enviando" -> "↻ Enviando"
+        encuesta.estado == "pendiente" -> "○ Pendiente"
+        else -> encuesta.estado ?: "Pendiente"
     }
     
     Card(
@@ -328,7 +376,7 @@ private fun DetallesErrorDialog(
                 InfoRow("Intentos:", encuesta.intento_numero?.toString() ?: "N/A")
                 
                 if (encuesta.mensaje_error != null) {
-                    Divider()
+                    HorizontalDivider()
                     Text(
                         text = "Mensaje de Error:",
                         fontWeight = FontWeight.Bold,
@@ -349,7 +397,7 @@ private fun DetallesErrorDialog(
                 }
                 
                 if (encuesta.fecha_intento != null) {
-                    Divider()
+                    HorizontalDivider()
                     InfoRow("Último intento:", encuesta.fecha_intento)
                 }
             }

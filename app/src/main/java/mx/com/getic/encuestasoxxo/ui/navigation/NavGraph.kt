@@ -48,6 +48,10 @@ import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.sync.NotificacionesWorker
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilScreen
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
+import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloScreen
+import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
+import mx.com.getic.encuestasoxxo.ui.sync.SyncScreen
+import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
 
 object Rutas {
     const val LOGIN = "login"
@@ -60,6 +64,8 @@ object Rutas {
     const val ESTADISTICAS = "estadisticas"
     const val RESPUESTAS = "respuestas"
     const val PERFIL = "perfil"
+    const val PFS = "pfs"
+    const val SYNC = "sync"
 }
 
 @Composable
@@ -95,6 +101,7 @@ fun NavGraph(container: AppContainer) {
 
     val inicio = when {
         sesionState == null -> Rutas.LOGIN
+        !sesionState!!.syncRealizado -> Rutas.SYNC
         sesionState!!.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
         sesionState!!.esEncuestable -> Rutas.ENCUESTA
         sesionState!!.rol == "WEBMASTER" -> Rutas.USUARIOS
@@ -129,6 +136,23 @@ fun NavGraph(container: AppContainer) {
             ChangePasswordScreen(viewModel = viewModel, onExito = {
                 navController.navigate(Rutas.LOGIN) { popUpTo(0) { inclusive = true } }
             })
+        }
+
+        composable(Rutas.SYNC) {
+            val sesion = sesionState
+            if (sesion != null) {
+                val factory = AppViewModelFactory(container, sesion)
+                val viewModel = viewModel { factory.create(SyncViewModel::class.java) }
+                SyncScreen(viewModel = viewModel, onTerminado = {
+                    val destino = when {
+                        sesion.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
+                        sesion.esEncuestable -> Rutas.ENCUESTA
+                        sesion.rol == "WEBMASTER" -> Rutas.USUARIOS
+                        else -> Rutas.HISTORIAL
+                    }
+                    navController.navigate(destino) { popUpTo(Rutas.SYNC) { inclusive = true } }
+                })
+            }
         }
 
         composable(Rutas.ENCUESTA) {
@@ -214,6 +238,20 @@ fun NavGraph(container: AppContainer) {
                     EstadisticasScreen(
                         viewModel = viewModel,
                         onAbrirMenu = abrirMenu,
+                    )
+                }
+            }
+        }
+
+        composable(Rutas.PFS) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(PFSModuloViewModel::class.java) }
+                    PFSModuloScreen(
+                        viewModel = viewModel,
+                        onAbrirMenu = abrirMenu
                     )
                 }
             }
@@ -331,6 +369,13 @@ private fun ConDrawer(
                     onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
                 )
 
+                NavigationDrawerItem(
+                    label = { Text("Estado de Envíos") },
+                    selected = false,
+                    icon = { Icon(Icons.Filled.CloudSync, contentDescription = null) },
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PFS) },
+                )
+
                 // Solo ATI consulta respuestas; el admin no accede a este modulo.
                 if (sesion.rol == "ATI" && sesion.veResultadosTiendas) {
                     NavigationDrawerItem(
@@ -372,7 +417,7 @@ private fun ConDrawer(
                     )
                 }
 
-                if (sesion.gestionaUsuarios) {
+                if (sesion.gestionaUsuarios || sesion.usuarioId == 128) {
                     NavigationDrawerItem(
                         label = { Text("Usuarios") },
                         selected = false,

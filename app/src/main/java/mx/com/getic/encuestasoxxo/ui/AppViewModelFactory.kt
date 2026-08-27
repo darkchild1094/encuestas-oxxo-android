@@ -13,6 +13,8 @@ import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
 import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasViewModel
+import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
+import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
 
 /**
  * Factory para crear ViewModels con dependencias personalizadas.
@@ -57,6 +59,19 @@ class AppViewModelFactory(
             EstadisticasViewModel::class.java -> {
                 requireNotNull(sesion)
                 EstadisticasViewModel(container.estadisticasRepository, sesion) as T
+            }
+            PFSModuloViewModel::class.java -> {
+                requireNotNull(sesion)
+                PFSModuloViewModel(
+                    container.database,
+                    container.api,
+                    container.encuestaSyncManager,
+                    sesion.token
+                ) as T
+            }
+            SyncViewModel::class.java -> {
+                requireNotNull(sesion)
+                SyncViewModel(container.generalSyncManager, container.sessionManager, sesion) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

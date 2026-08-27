@@ -100,11 +100,11 @@ class PreguntasViewModel(
         cargarPreguntas(id)
     }
 
-    fun cargarPreguntas(plazaId: Int) {
+    fun cargarPreguntas(plazaId: Int, refrescar: Boolean = false) {
         estado = estado.copy(cargandoPreguntas = true, error = null)
         viewModelScope.launch {
             try {
-                val resultado = repository.obtenerPreguntas(plazaId)
+                val resultado = repository.obtenerPreguntas(plazaId, refrescar = refrescar)
                 if (resultado != null) {
                     estado = estado.copy(
                         cuestionarioId = resultado.cuestionario.id,
@@ -118,6 +118,11 @@ class PreguntasViewModel(
                 estado = estado.copy(cargandoPreguntas = false, error = "Error al cargar preguntas.")
             }
         }
+    }
+
+    fun refrescar() {
+        val plazaId = estado.plazaId ?: return
+        cargarPreguntas(plazaId, refrescar = true)
     }
 
     fun agregarPregunta(texto: String, orden: Int) {

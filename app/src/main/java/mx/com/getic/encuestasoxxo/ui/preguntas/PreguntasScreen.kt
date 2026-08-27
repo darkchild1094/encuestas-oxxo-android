@@ -10,9 +10,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
@@ -27,6 +30,19 @@ fun PreguntasScreen(
     val context = LocalContext.current
     var mostrarDialogo by remember { mutableStateOf(false) }
     var preguntaAEditar by remember { mutableStateOf<PreguntaEntity?>(null) }
+    
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refrescar()
+        }
+    }
+    
+    LaunchedEffect(estado.cargandoPreguntas) {
+        if (!estado.cargandoPreguntas) {
+            // pullToRefreshState.endRefresh()
+        }
+    }
 
     LaunchedEffect(estado.error) {
         estado.error?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
@@ -61,70 +77,82 @@ fun PreguntasScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            if (!estado.plazaFija) {
-                item {
-                    SelectorUbicacion(
-                        estado = estado,
-                        onNegocio = viewModel::onNegocioSeleccionado,
-                        onRegion = viewModel::onRegionSeleccionada,
-                        onPlaza = viewModel::onPlazaSeleccionada
-                    )
-                }
-            } else {
-                item {
-                    Text(
-                        text = "Preguntas de la plaza asignada",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            if (estado.cargandoPreguntas) {
-                item {
-                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-            } else if (estado.plazaId != null) {
-                if (estado.preguntas.isEmpty()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (!estado.plazaFija) {
                     item {
-                        Text("No hay preguntas en esta plaza.", modifier = Modifier.padding(16.dp))
+                        SelectorUbicacion(
+                            estado = estado,
+                            onNegocio = viewModel::onNegocioSeleccionado,
+                            onRegion = viewModel::onRegionSeleccionada,
+                            onPlaza = viewModel::onPlazaSeleccionada
+                        )
+                    }
+                } else {
+                    item {
+                        Text(
+                            text = "Preguntas de la plaza asignada",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
-                items(estado.preguntas) { pregunta ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(pregunta.texto, style = MaterialTheme.typography.bodyLarge)
-                                Text("Orden: ${pregunta.orden}", style = MaterialTheme.typography.labelMedium)
-                            }
-                            IconButton(onClick = {
-                                preguntaAEditar = pregunta
-                                mostrarDialogo = true
-                            }) {
-                                Icon(Icons.Filled.Edit, contentDescription = "Editar")
-                            }
-                            IconButton(onClick = {
-                                viewModel.eliminarPregunta(pregunta.id)
-                            }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+
+                if (estado.cargandoPreguntas && !pullToRefreshState.isRefreshing) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                } else if (estado.plazaId != null) {
+                    if (estado.preguntas.isEmpty()) {
+                        item {
+                            Text("No hay preguntas en esta plaza.", modifier = Modifier.padding(16.dp))
+                        }
+                    }
+                    items(estado.preguntas) { pregunta ->
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(pregunta.texto, style = MaterialTheme.typography.bodyLarge)
+                                    Text("Orden: ${pregunta.orden}", style = MaterialTheme.typography.labelMedium)
+                                }
+                                IconButton(onClick = {
+                                    preguntaAEditar = pregunta
+                                    mostrarDialogo = true
+                                }) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                                }
+                                IconButton(onClick = {
+                                    viewModel.eliminarPregunta(pregunta.id)
+                                }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+                                }
                             }
                         }
                     }
-                }
-            } else {
-                item {
-                    Text("Selecciona una plaza para ver sus preguntas.", modifier = Modifier.padding(16.dp))
+                } else {
+                    item {
+                        Text("Selecciona una plaza para ver sus preguntas.", modifier = Modifier.padding(16.dp))
+                    }
                 }
             }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
         if (mostrarDialogo) {

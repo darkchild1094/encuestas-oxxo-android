@@ -47,9 +47,33 @@ class EncuestaRepository(
     // Room (son pocas, ya vienen acotadas a la plaza del usuario), para
     // que el selector funcione aunque el tecnico este ya sin señal
     // dentro de la tienda. ---
-    suspend fun tiendas(plazaId: Int): List<TiendaDto> {
+    suspend fun tiendas(plazaId: Int, refrescar: Boolean = false): List<TiendaDto> {
+        if (!refrescar) {
+            val cache = tiendaDao.obtenerPorPlaza(plazaId)
+            if (cache.isNotEmpty()) {
+                return cache.map { 
+                    TiendaDto(
+                        id = it.id,
+                        nombre = it.nombre,
+                        codigo = it.codigo,
+                        plaza_id = it.plazaId,
+                        direccion = it.direccion,
+                        latitud = it.latitud,
+                        longitud = it.longitud,
+                        ati_usuario_id = it.atiUsuarioId,
+                        ati_nombre = it.atiNombre,
+                        ati_foto = it.atiFoto,
+                        ati_genero = it.atiGenero,
+                    )
+                }
+            }
+        }
+
         return try {
+            Timber.d("Iniciando descarga de tiendas para plaza $plazaId...")
             val tiendas = api.tiendas(token(), plazaId)
+            Timber.d("API devolvió ${tiendas.size} tiendas para plaza $plazaId")
+            
             tiendaDao.borrarDe(plazaId)
             tiendaDao.guardar(tiendas.map { 
                 TiendaEntity(
@@ -89,7 +113,14 @@ class EncuestaRepository(
     }
 
     // --- ATI de la tienda: se refresca de red y queda disponible offline. ---
-    suspend fun atisDisponibles(plazaId: Int): List<AtiDto> {
+    suspend fun atisDisponibles(plazaId: Int, refrescar: Boolean = false): List<AtiDto> {
+        if (!refrescar) {
+            val cache = atiDao.obtenerPorPlaza(plazaId)
+            if (cache.isNotEmpty()) {
+                return cache.map { AtiDto(it.id, it.nombreCompleto, it.fotoPerfil, it.genero) }
+            }
+        }
+
         return try {
             val atis = api.atisDisponibles(token(), plazaId)
             atiDao.borrarDe(plazaId)
@@ -131,7 +162,17 @@ class EncuestaRepository(
     // --- Cuestionario: se refresca de red y se cachea en Room para
     // poder re-contestar en la misma tienda aunque se caiga la señal
     // a medio checklist. ---
-    suspend fun obtenerPreguntas(plazaId: Int): PreguntasResult? {
+    suspend fun obtenerPreguntas(plazaId: Int, refrescar: Boolean = false): PreguntasResult? {
+        if (!refrescar) {
+            val cache = cuestionarioDao.obtenerPorPlaza(plazaId)
+            if (cache != null) {
+                val preguntas = cuestionarioDao.obtenerPreguntas(cache.id)
+                if (preguntas.isNotEmpty()) {
+                    return PreguntasResult(cache, preguntas, esCacheado = true)
+                }
+            }
+        }
+
         try {
             Timber.d("Obteniendo preguntas de plaza $plazaId desde servidor")
             val respuesta = api.obtenerCuestionario(token(), plazaId)

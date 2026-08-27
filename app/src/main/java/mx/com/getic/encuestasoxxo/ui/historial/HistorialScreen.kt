@@ -9,14 +9,13 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 
 private fun colorPara(numero: Int): Color = when {
@@ -34,6 +33,19 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
     val encuestasDelAti = estado.encuestas.filter { it.atiId == atiSeleccionadoId }
     val encuestasPorTienda = encuestasDelAti.groupBy { "${it.tiendaCodigo}|${it.tienda}" }
     val encuestasTienda = tiendaSeleccionada?.let { encuestasPorTienda[it].orEmpty() }.orEmpty()
+
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.cargar()
+        }
+    }
+    
+    LaunchedEffect(estado.cargando) {
+        if (!estado.cargando) {
+            // pullToRefreshState.endRefresh() // No disponible en 1.2.x, se maneja solo si controlamos isRefreshing
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -58,114 +70,119 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
             )
         },
     ) { padding ->
-        if (estado.cargando) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
-        if (estado.error != null) {
-            Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(estado.error)
-            }
-            return@Scaffold
-        }
-
-        if (estado.encuestas.isEmpty() && estado.atis.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("Todavia no hay respuestas en tus tiendas.")
-            }
-            return@Scaffold
-        }
-
-        val lista = if (tiendaSeleccionada == null) {
-            encuestasPorTienda.values.sortedBy { it.first().tienda }
-        } else {
-            listOf(encuestasTienda)
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            if (estado.atis.isNotEmpty()) {
-                item {
-                    ScrollableTabRow(
-                        selectedTabIndex = estado.atis.indexOfFirst { it.id == atiSeleccionadoId }.coerceAtLeast(0),
-                        edgePadding = 0.dp,
-                    ) {
-                        estado.atis.forEach { ati ->
-                            Tab(
-                                selected = ati.id == atiSeleccionadoId,
-                                onClick = {
-                                    tiendaSeleccionada = null
-                                    viewModel.seleccionarAti(ati.id)
-                                },
-                                text = { Text(ati.nombre_completo) },
-                            )
-                        }
-                    }
+            if (estado.cargando && !pullToRefreshState.isRefreshing) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-            }
-
-            if (tiendaSeleccionada == null) {
-                if (lista.isEmpty()) {
-                    item { Text("Este ATI todavía no tiene respuestas registradas.") }
+            } else if (estado.error != null) {
+                Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Text(estado.error)
                 }
-                items(lista, key = { it.first().tiendaCodigo }) { encuestas ->
-                    val primera = encuestas.first()
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { tiendaSeleccionada = "${primera.tiendaCodigo}|${primera.tienda}" }
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text("${primera.tiendaCodigo} - ${primera.tienda}", style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "${encuestas.size} encuesta${if (encuestas.size == 1) "" else "s"}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                            Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Ver encuestas", modifier = Modifier.size(20.dp))
-                        }
-                    }
+            } else if (estado.encuestas.isEmpty() && estado.atis.isEmpty()) {
+                Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Text("Todavia no hay respuestas en tus tiendas.")
                 }
             } else {
-                items(encuestasTienda.sortedByDescending { it.fecha }, key = { it.encuestaId }) { enc ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(enc.fecha, style = MaterialTheme.typography.titleMedium)
-                            Text("${enc.tiendaCodigo} - ${enc.tienda}", style = MaterialTheme.typography.bodyMedium)
+                val lista = if (tiendaSeleccionada == null) {
+                    encuestasPorTienda.values.sortedBy { it.first().tienda }
+                } else {
+                    listOf(encuestasTienda)
+                }
 
-                            enc.calificaciones.forEach { (pregunta, cal) ->
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(pregunta, modifier = Modifier.weight(1f))
-                                    Text(
-                                        "$cal/10",
-                                        color = colorPara(cal),
-                                        style = MaterialTheme.typography.titleSmall,
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (estado.atis.isNotEmpty()) {
+                        item {
+                            ScrollableTabRow(
+                                selectedTabIndex = estado.atis.indexOfFirst { it.id == atiSeleccionadoId }.coerceAtLeast(0),
+                                edgePadding = 0.dp,
+                            ) {
+                                estado.atis.forEach { ati ->
+                                    Tab(
+                                        selected = ati.id == atiSeleccionadoId,
+                                        onClick = {
+                                            tiendaSeleccionada = null
+                                            viewModel.seleccionarAti(ati.id)
+                                        },
+                                        text = { Text(ati.nombre_completo) },
                                     )
                                 }
                             }
+                        }
+                    }
 
-                            if (!enc.comentario.isNullOrBlank()) {
-                                HorizontalDivider()
-                                Text("\"${enc.comentario}\"", style = MaterialTheme.typography.bodyMedium)
+                    if (tiendaSeleccionada == null) {
+                        if (lista.isEmpty()) {
+                            item { Text("Este ATI todavía no tiene respuestas registradas.") }
+                        }
+                        items(lista, key = { it.first().tiendaCodigo }) { encuestas ->
+                            val primera = encuestas.first()
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { tiendaSeleccionada = "${primera.tiendaCodigo}|${primera.tienda}" }
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("${primera.tiendaCodigo} - ${primera.tienda}", style = MaterialTheme.typography.titleMedium)
+                                        Text(
+                                            "${encuestas.size} encuesta${if (encuestas.size == 1) "" else "s"}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Ver encuestas", modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        }
+                    } else {
+                        items(encuestasTienda.sortedByDescending { it.fecha }, key = { it.encuestaId }) { enc ->
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(enc.fecha, style = MaterialTheme.typography.titleMedium)
+                                    Text("${enc.tiendaCodigo} - ${enc.tienda}", style = MaterialTheme.typography.bodyMedium)
+
+                                    enc.calificaciones.forEach { (pregunta, cal) ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            Text(pregunta, modifier = Modifier.weight(1f))
+                                            Text(
+                                                "$cal/10",
+                                                color = colorPara(cal),
+                                                style = MaterialTheme.typography.titleSmall,
+                                            )
+                                        }
+                                    }
+
+                                    if (!enc.comentario.isNullOrBlank()) {
+                                        HorizontalDivider()
+                                        Text("\"${enc.comentario}\"", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

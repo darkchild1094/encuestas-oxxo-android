@@ -491,7 +491,7 @@ private fun BuscadorTienda(
             if (query.length >= 2) {
                 val filtradas = tiendas.filter {
                     it.codigo.contains(query, ignoreCase = true) || it.nombre.contains(query, ignoreCase = true)
-                }.take(8)
+                }.take(20)
 
                 if (filtradas.isNotEmpty()) {
                     Card(

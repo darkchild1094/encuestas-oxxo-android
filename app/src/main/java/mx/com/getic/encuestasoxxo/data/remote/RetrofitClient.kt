@@ -24,9 +24,9 @@ object RetrofitClient {
             // (el escenario real de uso: dentro de una tienda con
             // datos moviles regulares), sin dejar que una conexion
             // realmente caida se quede colgada para siempre.
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             // Reintenta automaticamente si la conexion se cae a medio
             // request (comun con datos moviles cambiando de torre/red)
             .retryOnConnectionFailure(true)

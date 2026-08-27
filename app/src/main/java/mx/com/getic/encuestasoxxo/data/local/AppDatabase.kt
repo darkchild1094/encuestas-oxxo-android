@@ -11,6 +11,8 @@ import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
 import mx.com.getic.encuestasoxxo.data.local.dao.AtiDao
 import mx.com.getic.encuestasoxxo.data.local.dao.TiendaDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaSyncLogDao
+import mx.com.getic.encuestasoxxo.data.local.dao.CatalogoDao
+import mx.com.getic.encuestasoxxo.data.local.dao.UsuarioDao
 import mx.com.getic.encuestasoxxo.data.local.entities.CuestionarioEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.AtiEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
@@ -18,6 +20,11 @@ import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaSyncLogEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.TiendaEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.NegocioEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.RegionEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.PlazaEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.UsuarioEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.RolEntity
 
 // Migracion 1 -> 2: agrega la tabla de cache de tiendas (selector
 // offline). Es puramente aditiva -- no toca las tablas existentes, asi
@@ -85,6 +92,16 @@ private val MIGRACION_5_6 = object : Migration(5, 6) {
     }
 }
 
+private val MIGRACION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `negocio_cache` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `region_cache` (`id` INTEGER NOT NULL, `negocioId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `cr` TEXT, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `plaza_cache` (`id` INTEGER NOT NULL, `regionId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `cr` TEXT, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `usuario_cache` (`id` INTEGER NOT NULL, `correo` TEXT NOT NULL, `nombreCompleto` TEXT, `fotoPerfil` TEXT, `genero` TEXT, `plazaId` INTEGER, `plazaNombre` TEXT, `rol` TEXT NOT NULL, `gestionaPreguntas` INTEGER NOT NULL, `gestionaUsuarios` INTEGER NOT NULL, `esEncuestable` INTEGER NOT NULL, `veResultadosTiendas` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `rol_cache` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`id`))")
+    }
+}
+
 @Database(
     entities = [
         CuestionarioEntity::class,
@@ -94,8 +111,13 @@ private val MIGRACION_5_6 = object : Migration(5, 6) {
         TiendaEntity::class,
         AtiEntity::class,
         EncuestaSyncLogEntity::class,
+        NegocioEntity::class,
+        RegionEntity::class,
+        PlazaEntity::class,
+        UsuarioEntity::class,
+        RolEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -104,6 +126,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun atiDao(): AtiDao
     abstract fun tiendaDao(): TiendaDao
     abstract fun encuestaSyncLogDao(): EncuestaSyncLogDao
+    abstract fun catalogoDao(): CatalogoDao
+    abstract fun usuarioDao(): UsuarioDao
 
     companion object {
         @Volatile private var instancia: AppDatabase? = null
@@ -114,7 +138,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "encuestas_oxxo.db"
-                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6).build().also { instancia = it }
+                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7).build().also { instancia = it }
             }
     }
 }

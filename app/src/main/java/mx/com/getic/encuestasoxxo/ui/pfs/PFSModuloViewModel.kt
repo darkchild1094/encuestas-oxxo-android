@@ -38,9 +38,8 @@ class PFSModuloViewModel(
             _uiState.value = _uiState.value.copy(cargando = true, error = null)
             
             try {
+                // 1. Intentar cargar desde la API
                 val response = apiService.obtenerEncuestasPendientesPFS("Bearer $token")
-                
-                Log.d(TAG, "Cargadas ${response.total_encuestas} encuestas pendientes")
                 
                 _uiState.value = _uiState.value.copy(
                     cargando = false,
@@ -49,11 +48,45 @@ class PFSModuloViewModel(
                     ultimaActualizacion = System.currentTimeMillis()
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Error cargando encuestas: ${e.message}")
-                _uiState.value = _uiState.value.copy(
-                    cargando = false,
-                    error = "Error: ${e.message}"
-                )
+                Log.e(TAG, "Error cargando encuestas de API: ${e.message}, intentando local...")
+                
+                // 2. Si falla la API (offline), cargar desde la base de datos local
+                try {
+                    val locales = db.encuestaDao().pendientesDeSincronizar()
+                    
+                    val mapeadas = locales.map { e ->
+                        val tienda = db.tiendaDao().obtener(e.tiendaId)
+                        val log = db.encuestaSyncLogDao().obtenerUltimoPorEncuesta(e.id)
+                        
+                        EncuestaPFSDto(
+                            id = e.id,
+                            tienda_id = e.tiendaId,
+                            tienda_nombre = tienda?.nombre ?: "Tienda ${e.tiendaId}",
+                            folio = e.folio,
+                            fecha_creacion_local = e.fechaCreacionLocal,
+                            comentario = e.comentario,
+                            sincronizado = false,
+                            estado = log?.estado ?: "pendiente",
+                            intento_numero = log?.intento_numero ?: 0,
+                            mensaje_error = log?.mensaje_error,
+                            fecha_intento = null,
+                            fecha_confirmacion = null,
+                            total_respuestas = 0 // No crítico para esta vista
+                        )
+                    }
+                    
+                    _uiState.value = _uiState.value.copy(
+                        cargando = false,
+                        encuestas = mapeadas,
+                        totalEncuestas = mapeadas.size,
+                        ultimaActualizacion = System.currentTimeMillis()
+                    )
+                } catch (localE: Exception) {
+                    _uiState.value = _uiState.value.copy(
+                        cargando = false,
+                        error = "Sin conexión y error al leer local: ${localE.message}"
+                    )
+                }
             }
         }
     }

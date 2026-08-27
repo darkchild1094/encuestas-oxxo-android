@@ -79,6 +79,23 @@ class TiendasViewModel(
         }
     }
 
+    fun refrescar() {
+        val plazaId = plazaSeleccionadaId ?: return
+        cargando = true
+        error = null
+        viewModelScope.launch {
+            try {
+                tiendas = repo.tiendas(plazaId, refrescar = true)
+                cargarAtisPlaza(plazaId)
+            } catch (e: Exception) {
+                error = "Error al refrescar tiendas"
+                Timber.e(e)
+            } finally {
+                cargando = false
+            }
+        }
+    }
+
     fun actualizarTienda(tienda: TiendaDto, onExito: () -> Unit) {
         guardando = true
         error = null

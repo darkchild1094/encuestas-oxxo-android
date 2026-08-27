@@ -9,16 +9,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +41,19 @@ fun EstadisticasScreen(
 ) {
     val state = viewModel.state
     var campoFecha by remember { mutableStateOf<CampoFecha?>(null) }
+    
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.cargar(state.tipoSeleccionado)
+        }
+    }
+    
+    LaunchedEffect(state.cargando) {
+        if (!state.cargando) {
+            // pullToRefreshState.endRefresh()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -61,126 +72,136 @@ fun EstadisticasScreen(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            // Selectores de tipo
-            TabRow(selectedTabIndex = state.tipoSeleccionado.ordinal) {
-                TipoEstadistica.entries.forEach { tipo ->
-                    Tab(
-                        selected = state.tipoSeleccionado == tipo,
-                        onClick = { viewModel.cargar(tipo) },
-                        text = {
-                            Text(
-                                text = when (tipo) {
-                                    TipoEstadistica.PFS -> "Por PFS"
-                                    TipoEstadistica.REGION_ATI -> "ATI Región"
-                                    TipoEstadistica.REGION_PLAZA -> "Plaza Región"
-                                },
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                OutlinedButton(
-                    onClick = { campoFecha = CampoFecha.DESDE },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Desde: ${state.desde ?: "cualquier fecha"}")
-                }
-                OutlinedButton(
-                    onClick = { campoFecha = CampoFecha.HASTA },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Hasta: ${state.hasta ?: "cualquier fecha"}")
-                }
-                if (state.desde != null || state.hasta != null) {
-                    TextButton(onClick = viewModel::limpiarFechas) {
-                        Text("Limpiar")
-                    }
-                }
-            }
-
-            if (campoFecha != null) {
-                val fechaInicial = when (campoFecha) {
-                    CampoFecha.DESDE -> state.desde
-                    CampoFecha.HASTA -> state.hasta
-                    null -> null
-                }?.let { fecha ->
-                    SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }.parse(fecha)?.time
-                }
-                val selector = rememberDatePickerState(initialSelectedDateMillis = fechaInicial)
-                DatePickerDialog(
-                    onDismissRequest = { campoFecha = null },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                selector.selectedDateMillis?.let { millis ->
-                                    val fecha = fechaDesdeMillis(millis)
-                                    if (campoFecha == CampoFecha.DESDE) viewModel.establecerDesde(fecha)
-                                    else viewModel.establecerHasta(fecha)
-                                }
-                                campoFecha = null
+                // Selectores de tipo
+                TabRow(selectedTabIndex = state.tipoSeleccionado.ordinal) {
+                    TipoEstadistica.entries.forEach { tipo ->
+                        Tab(
+                            selected = state.tipoSeleccionado == tipo,
+                            onClick = { viewModel.cargar(tipo) },
+                            text = {
+                                Text(
+                                    text = when (tipo) {
+                                        TipoEstadistica.PFS -> "Por PFS"
+                                        TipoEstadistica.REGION_ATI -> "ATI Región"
+                                        TipoEstadistica.REGION_PLAZA -> "Plaza Región"
+                                    },
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
-                        ) { Text("Aceptar") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { campoFecha = null }) { Text("Cancelar") }
-                    }
-                ) {
-                    DatePicker(state = selector)
-                }
-            }
-
-            if (state.cargando) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (state.error != null && state.datos.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(state.error, color = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { viewModel.cargar(state.tipoSeleccionado) }) {
-                            Text("Reintentar")
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        Text(
-                            text = when (state.tipoSeleccionado) {
-                                TipoEstadistica.PFS -> "Promedio de preguntas por PFS en tu plaza"
-                                TipoEstadistica.REGION_ATI -> "Comparativa entre ATIs de la región"
-                                TipoEstadistica.REGION_PLAZA -> "Comparativa entre Plazas de la región"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
                         )
                     }
+                }
 
-                    items(state.datos) { item ->
-                        GraficaBarraPregunta(item)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedButton(
+                        onClick = { campoFecha = CampoFecha.DESDE },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Desde: ${state.desde ?: "cualquier fecha"}")
+                    }
+                    OutlinedButton(
+                        onClick = { campoFecha = CampoFecha.HASTA },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Hasta: ${state.hasta ?: "cualquier fecha"}")
+                    }
+                    if (state.desde != null || state.hasta != null) {
+                        TextButton(onClick = viewModel::limpiarFechas) {
+                            Text("Limpiar")
+                        }
                     }
                 }
+
+                if (state.cargando && !pullToRefreshState.isRefreshing) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (state.error != null && state.datos.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(state.error, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = { viewModel.cargar(state.tipoSeleccionado) }) {
+                                Text("Reintentar")
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = when (state.tipoSeleccionado) {
+                                    TipoEstadistica.PFS -> "Promedio de preguntas por PFS en tu plaza"
+                                    TipoEstadistica.REGION_ATI -> "Comparativa entre ATIs de la región"
+                                    TipoEstadistica.REGION_PLAZA -> "Comparativa entre Plazas de la región"
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        items(state.datos) { item ->
+                            GraficaBarraPregunta(item)
+                        }
+                    }
+                }
+            }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
+
+        if (campoFecha != null) {
+            val fechaInicial = when (campoFecha) {
+                CampoFecha.DESDE -> state.desde
+                CampoFecha.HASTA -> state.hasta
+                null -> null
+            }?.let { fecha ->
+                SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }.parse(fecha)?.time
+            }
+            val selector = rememberDatePickerState(initialSelectedDateMillis = fechaInicial)
+            DatePickerDialog(
+                onDismissRequest = { campoFecha = null },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            selector.selectedDateMillis?.let { millis ->
+                                val fecha = fechaDesdeMillis(millis)
+                                if (campoFecha == CampoFecha.DESDE) viewModel.establecerDesde(fecha)
+                                else viewModel.establecerHasta(fecha)
+                            }
+                            campoFecha = null
+                        }
+                    ) { Text("Aceptar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { campoFecha = null }) { Text("Cancelar") }
+                }
+            ) {
+                DatePicker(state = selector)
             }
         }
     }

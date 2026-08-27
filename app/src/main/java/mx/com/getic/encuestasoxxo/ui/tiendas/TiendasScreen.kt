@@ -10,9 +10,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,6 +32,19 @@ fun TiendasScreen(
 ) {
     var tiendaDetalle by remember { mutableStateOf<TiendaDto?>(null) }
     val context = LocalContext.current
+    
+    val pullToRefreshState = rememberPullToRefreshState()
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refrescar()
+        }
+    }
+    
+    LaunchedEffect(viewModel.cargando) {
+        if (!viewModel.cargando) {
+            // pullToRefreshState.endRefresh()
+        }
+    }
 
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
@@ -46,90 +62,101 @@ fun TiendasScreen(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            // Selector de Plaza (solo para Webmaster)
-            if (sesion.rol == "WEBMASTER") {
-                var expandidoPlaza by remember { mutableStateOf(false) }
-                val plazaSeleccionada = viewModel.plazas.find { it.id == viewModel.plazaSeleccionadaId }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // Selector de Plaza (solo para Webmaster)
+                if (sesion.rol == "WEBMASTER") {
+                    var expandidoPlaza by remember { mutableStateOf(false) }
+                    val plazaSeleccionada = viewModel.plazas.find { it.id == viewModel.plazaSeleccionadaId }
 
-                ExposedDropdownMenuBox(
-                    expanded = expandidoPlaza,
-                    onExpandedChange = { expandidoPlaza = it }
-                ) {
-                    OutlinedTextField(
-                        value = plazaSeleccionada?.nombre ?: "Seleccionar Plaza",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Plaza") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoPlaza) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
-                    )
-                    ExposedDropdownMenu(
+                    ExposedDropdownMenuBox(
                         expanded = expandidoPlaza,
-                        onDismissRequest = { expandidoPlaza = false }
+                        onExpandedChange = { expandidoPlaza = it }
                     ) {
-                        viewModel.plazas.forEach { p ->
-                            DropdownMenuItem(
-                                text = { Text(p.nombre) },
-                                onClick = {
-                                    viewModel.cargarTiendas(p.id)
-                                    expandidoPlaza = false
-                                }
-                            )
+                        OutlinedTextField(
+                            value = plazaSeleccionada?.nombre ?: "Seleccionar Plaza",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Plaza") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoPlaza) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandidoPlaza,
+                            onDismissRequest = { expandidoPlaza = false }
+                        ) {
+                            viewModel.plazas.forEach { p ->
+                                DropdownMenuItem(
+                                    text = { Text(p.nombre) },
+                                    onClick = {
+                                        viewModel.cargarTiendas(p.id)
+                                        expandidoPlaza = false
+                                    }
+                                )
+                            }
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
                 }
+
+                // Buscador
+                OutlinedTextField(
+                    value = viewModel.query,
+                    onValueChange = { viewModel.query = it },
+                    label = { Text("Buscar por CR o nombre") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    trailingIcon = if (viewModel.query.isNotEmpty()) {
+                        { IconButton(onClick = { viewModel.query = "" }) { Icon(Icons.Default.Clear, null) } }
+                    } else null
+                )
+
                 Spacer(Modifier.height(16.dp))
-            }
 
-            // Buscador
-            OutlinedTextField(
-                value = viewModel.query,
-                onValueChange = { viewModel.query = it },
-                label = { Text("Buscar por CR o nombre") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                trailingIcon = if (viewModel.query.isNotEmpty()) {
-                    { IconButton(onClick = { viewModel.query = "" }) { Icon(Icons.Default.Clear, null) } }
-                } else null
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            if (viewModel.cargando) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (viewModel.error != null) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(viewModel.error!!, color = MaterialTheme.colorScheme.error)
-                }
-            } else {
-                val tiendas = viewModel.tiendasFiltradas
-                if (tiendas.isEmpty()) {
+                if (viewModel.cargando && !pullToRefreshState.isRefreshing) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No se encontraron tiendas")
+                        CircularProgressIndicator()
+                    }
+                } else if (viewModel.error != null) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(viewModel.error!!, color = MaterialTheme.colorScheme.error)
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(tiendas) { tienda ->
-                            ListItem(
-                                headlineContent = { Text(tienda.nombre, fontWeight = FontWeight.Bold) },
-                                supportingContent = { Text("CR: ${tienda.codigo}") },
-                                leadingContent = { Icon(Icons.Default.Store, null) },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                                    .let { if (tiendaDetalle == null) it.clickable { tiendaDetalle = tienda } else it }
-                            )
-                            HorizontalDivider()
+                    val tiendas = viewModel.tiendasFiltradas
+                    if (tiendas.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text("No se encontraron tiendas")
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            items(tiendas) { tienda ->
+                                ListItem(
+                                    headlineContent = { Text(tienda.nombre, fontWeight = FontWeight.Bold) },
+                                    supportingContent = { Text("CR: ${tienda.codigo}") },
+                                    leadingContent = { Icon(Icons.Default.Store, null) },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                        .let { if (tiendaDetalle == null) it.clickable { tiendaDetalle = tienda } else it }
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
             }
+            
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
         if (tiendaDetalle != null) {
