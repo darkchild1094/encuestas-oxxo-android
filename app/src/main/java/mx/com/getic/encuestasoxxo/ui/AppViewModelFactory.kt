@@ -54,7 +54,7 @@ class AppViewModelFactory(
             }
             PerfilViewModel::class.java -> {
                 requireNotNull(sesion)
-                PerfilViewModel(container.usuarioRepository, container.sessionManager, sesion) as T
+                PerfilViewModel(container.usuarioRepository, container.sessionManager, container.updateManager, sesion) as T
             }
             EstadisticasViewModel::class.java -> {
                 requireNotNull(sesion)

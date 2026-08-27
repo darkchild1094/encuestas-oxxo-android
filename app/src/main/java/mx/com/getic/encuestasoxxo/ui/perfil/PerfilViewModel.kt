@@ -8,9 +8,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import mx.com.getic.encuestasoxxo.BuildConfig
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
+import mx.com.getic.encuestasoxxo.utils.UpdateManager
 import timber.log.Timber
 
 data class PerfilUiState(
@@ -20,22 +22,67 @@ data class PerfilUiState(
     val confirmPassword: String = "",
     val cargando: Boolean = false,
     val exito: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val buscandoActualizacion: Boolean = false,
+    val actualizacionDisponible: Triple<String, String, Boolean>? = null,
+    val sinActualizaciones: Boolean = false
 )
 
 class PerfilViewModel(
     private val repository: UsuarioRepository,
     private val sessionManager: SessionManager,
+    private val updateManager: UpdateManager,
     private val sesion: Sesion
 ) : ViewModel() {
 
     var estado by mutableStateOf(PerfilUiState(nombre = sesion.nombreCompleto))
         private set
 
+    val versionActual: String = BuildConfig.VERSION_NAME
+
     fun onNombreChange(v: String) { estado = estado.copy(nombre = v) }
     fun onFotoSelected(uri: Uri?) { estado = estado.copy(fotoUri = uri) }
     fun onPasswordChange(v: String) { estado = estado.copy(password = v) }
     fun onConfirmChange(v: String) { estado = estado.copy(confirmPassword = v) }
+
+    fun buscarActualizaciones() {
+        estado = estado.copy(buscandoActualizacion = true, sinActualizaciones = false)
+        viewModelScope.launch {
+            try {
+                var encontrada = false
+                updateManager.checarYDescargar { versionName, url, obligatoria ->
+                    encontrada = true
+                    estado = estado.copy(
+                        buscandoActualizacion = false,
+                        actualizacionDisponible = Triple(versionName, url, obligatoria)
+                    )
+                }
+                if (!encontrada) {
+                    estado = estado.copy(buscandoActualizacion = false, sinActualizaciones = true)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error buscando actualizaciones")
+                estado = estado.copy(
+                    buscandoActualizacion = false,
+                    error = "No se pudo verificar actualizaciones: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun descargarActualizacion() {
+        estado.actualizacionDisponible?.let { (_, url, _) ->
+            updateManager.descargarEInstalar(url)
+        }
+    }
+
+    fun cerrarDialogoActualizacion() {
+        estado = estado.copy(actualizacionDisponible = null)
+    }
+
+    fun limpiarSinActualizaciones() {
+        estado = estado.copy(sinActualizaciones = false)
+    }
 
     fun guardar(context: Context) {
         if (estado.password.isNotEmpty() && estado.password != estado.confirmPassword) {

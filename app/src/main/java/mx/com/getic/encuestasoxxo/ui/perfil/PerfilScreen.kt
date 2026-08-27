@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -56,6 +57,13 @@ fun PerfilScreen(
     LaunchedEffect(estado.error) {
         estado.error?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    LaunchedEffect(estado.sinActualizaciones) {
+        if (estado.sinActualizaciones) {
+            Toast.makeText(context, "Ya tienes la última versión instalada", Toast.LENGTH_SHORT).show()
+            viewModel.limpiarSinActualizaciones()
         }
     }
 
@@ -193,6 +201,53 @@ fun PerfilScreen(
                     Text("Guardar cambios")
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Text(
+                text = "Versión instalada: ${viewModel.versionActual}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            OutlinedButton(
+                onClick = { viewModel.buscarActualizaciones() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !estado.buscandoActualizacion
+            ) {
+                if (estado.buscandoActualizacion) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Buscando...")
+                } else {
+                    Icon(Icons.Filled.SystemUpdate, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Buscar actualizaciones")
+                }
+            }
         }
+    }
+
+    // Diálogo de actualización disponible (búsqueda manual)
+    estado.actualizacionDisponible?.let { (versionName, _, obligatoria) ->
+        AlertDialog(
+            onDismissRequest = { if (!obligatoria) viewModel.cerrarDialogoActualizacion() },
+            title = { Text("Actualización disponible") },
+            text = {
+                Text("Hay una nueva versión disponible ($versionName). ${if (obligatoria) "Es necesario actualizar para continuar usando la app." else "¿Deseas actualizarla ahora?"}")
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.descargarActualizacion() }) {
+                    Text("Actualizar")
+                }
+            },
+            dismissButton = if (!obligatoria) {
+                {
+                    TextButton(onClick = { viewModel.cerrarDialogoActualizacion() }) {
+                        Text("Más tarde")
+                    }
+                }
+            } else null
+        )
     }
 }
