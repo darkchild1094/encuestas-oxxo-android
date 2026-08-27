@@ -3,6 +3,7 @@ package mx.com.getic.encuestasoxxo.data.local.entities
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 
 @Entity(
@@ -22,6 +23,7 @@ import java.time.LocalDateTime
     ]
 )
 data class EncuestaSyncLogEntity(
+    @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val encuesta_id: String,
     val estado: String,

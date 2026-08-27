@@ -4,6 +4,7 @@ import android.util.Log
 import mx.com.getic.encuestasoxxo.data.local.AppDatabase
 import mx.com.getic.encuestasoxxo.data.local.entities.*
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
+import mx.com.getic.encuestasoxxo.data.remote.ApiServiceSync
 import kotlinx.coroutines.delay
 import retrofit2.HttpException
 import java.io.IOException

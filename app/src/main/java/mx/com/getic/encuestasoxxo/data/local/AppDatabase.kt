@@ -10,9 +10,11 @@ import mx.com.getic.encuestasoxxo.data.local.dao.CuestionarioDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
 import mx.com.getic.encuestasoxxo.data.local.dao.AtiDao
 import mx.com.getic.encuestasoxxo.data.local.dao.TiendaDao
+import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaSyncLogDao
 import mx.com.getic.encuestasoxxo.data.local.entities.CuestionarioEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.AtiEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaSyncLogEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.TiendaEntity
@@ -60,6 +62,29 @@ private val MIGRACION_4_5 = object : Migration(4, 5) {
     }
 }
 
+private val MIGRACION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `encuesta_sync_log` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `encuesta_id` TEXT NOT NULL,
+                `estado` TEXT NOT NULL,
+                `intento_numero` INTEGER NOT NULL DEFAULT 1,
+                `codigo_respuesta` INTEGER,
+                `mensaje_error` TEXT,
+                `handshake_id` TEXT,
+                `confirmado_servidor` INTEGER NOT NULL DEFAULT 0,
+                `fecha_intento` INTEGER NOT NULL,
+                `fecha_confirmacion` INTEGER,
+                FOREIGN KEY(`encuesta_id`) REFERENCES `encuesta`(`id`) ON DELETE CASCADE
+            )
+        """)
+        db.execSQL("CREATE INDEX `idx_encuesta_id` ON `encuesta_sync_log`(`encuesta_id`)")
+        db.execSQL("CREATE INDEX `idx_estado` ON `encuesta_sync_log`(`estado`)")
+        db.execSQL("CREATE INDEX `idx_handshake_id` ON `encuesta_sync_log`(`handshake_id`)")
+    }
+}
+
 @Database(
     entities = [
         CuestionarioEntity::class,
@@ -68,8 +93,9 @@ private val MIGRACION_4_5 = object : Migration(4, 5) {
         RespuestaDetalleEntity::class,
         TiendaEntity::class,
         AtiEntity::class,
+        EncuestaSyncLogEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -77,6 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun encuestaDao(): EncuestaDao
     abstract fun atiDao(): AtiDao
     abstract fun tiendaDao(): TiendaDao
+    abstract fun encuestaSyncLogDao(): EncuestaSyncLogDao
 
     companion object {
         @Volatile private var instancia: AppDatabase? = null
@@ -87,7 +114,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "encuestas_oxxo.db"
-                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5).build().also { instancia = it }
+                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6).build().also { instancia = it }
             }
     }
 }
