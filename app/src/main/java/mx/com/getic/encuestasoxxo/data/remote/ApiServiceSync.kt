@@ -36,13 +36,14 @@ interface ApiServiceSync {
 }
 
 data class PFSPendientesResponse(
-    val tienda_id: Int,
     val total_encuestas: Int,
     val encuestas: List<EncuestaPFSDto>
 )
 
 data class EncuestaPFSDto(
     val id: String,
+    val tienda_id: Int,
+    val tienda_nombre: String,
     val folio: String?,
     val fecha_creacion_local: String,
     val comentario: String?,

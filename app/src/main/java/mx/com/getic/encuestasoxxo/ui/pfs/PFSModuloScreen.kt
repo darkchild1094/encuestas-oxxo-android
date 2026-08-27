@@ -37,7 +37,6 @@ fun PFSModuloScreen(
     ) {
         HeaderPFS(
             totalEncuestas = uiState.totalEncuestas,
-            tiendaId = uiState.tiendaId,
             onRefresh = { viewModel.cargarEncuestasPendientes() }
         )
         
@@ -93,7 +92,6 @@ fun PFSModuloScreen(
 @Composable
 private fun HeaderPFS(
     totalEncuestas: Int,
-    tiendaId: Int?,
     onRefresh: () -> Unit
 ) {
     Column(
@@ -114,13 +112,11 @@ private fun HeaderPFS(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
-                if (tiendaId != null) {
-                    Text(
-                        text = "Tienda #$tiendaId",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 14.sp
-                    )
-                }
+                Text(
+                    text = "Tus encuestas capturadas (todas las tiendas)",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp
+                )
             }
             
             IconButton(onClick = onRefresh) {
@@ -208,6 +204,12 @@ private fun EncuestaCard(
                             fontSize = 16.sp
                         )
                     }
+                    Text(
+                        text = encuesta.tienda_nombre,
+                        fontSize = 13.sp,
+                        color = Color(0xFF1976D2),
+                        fontWeight = FontWeight.Medium
+                    )
                     Text(
                         text = encuesta.id.take(8),
                         fontSize = 12.sp,
