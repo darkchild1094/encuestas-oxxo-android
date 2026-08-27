@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.com.getic.encuestasoxxo.data.remote.EncuestaPFSDto
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +66,8 @@ fun PFSModuloScreen(
             )
         }
     ) { padding ->
+        LoadingOverlay(mostrar = uiState.cargando)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

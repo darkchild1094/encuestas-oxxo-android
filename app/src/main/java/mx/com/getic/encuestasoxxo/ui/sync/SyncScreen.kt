@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import mx.com.getic.encuestasoxxo.R
 
@@ -37,14 +38,15 @@ fun SyncScreen(
                 modifier = Modifier.size(120.dp)
             )
             
-            if (!viewModel.terminado) {
+            if (!viewModel.terminado && viewModel.updateAvailable == null) {
                 CircularProgressIndicator()
             }
             
             Text(
                 text = viewModel.estado,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center
             )
             
             if (viewModel.estado.contains("Error")) {
@@ -53,5 +55,28 @@ fun SyncScreen(
                 }
             }
         }
+    }
+
+    // Diálogo de actualización
+    viewModel.updateAvailable?.let { (versionName, _, obligatoria) ->
+        AlertDialog(
+            onDismissRequest = { if (!obligatoria) viewModel.ignorarActualizacion() },
+            title = { Text("Actualización Disponible") },
+            text = { 
+                Text("Hay una nueva versión disponible ($versionName). ${if (obligatoria) "Es necesario actualizar para continuar." else "¿Deseas actualizar ahora?"}")
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.descargarActualizacion() }) {
+                    Text("Actualizar")
+                }
+            },
+            dismissButton = if (!obligatoria) {
+                {
+                    TextButton(onClick = { viewModel.ignorarActualizacion() }) {
+                        Text("Más tarde")
+                    }
+                }
+            } else null
+        )
     }
 }

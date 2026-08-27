@@ -19,6 +19,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +78,8 @@ fun PreguntasScreen(
             }
         }
     ) { padding ->
+        LoadingOverlay(mostrar = estado.cargandoPreguntas || estado.cargandoCatalogo)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
+
 private fun colorPara(numero: Int): Color = when {
     numero <= 6 -> Color(0xFFDA3E64)
     numero <= 8 -> Color(0xFFF5B913)
@@ -70,6 +72,8 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
             )
         },
     ) { padding ->
+        LoadingOverlay(mostrar = estado.cargando)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

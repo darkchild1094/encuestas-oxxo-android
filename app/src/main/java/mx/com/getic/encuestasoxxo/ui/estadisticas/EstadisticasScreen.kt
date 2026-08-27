@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import mx.com.getic.encuestasoxxo.data.remote.dto.PromedioPreguntaDto
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 import java.util.Locale
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,6 +73,8 @@ fun EstadisticasScreen(
             )
         }
     ) { padding ->
+        LoadingOverlay(mostrar = state.cargando)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

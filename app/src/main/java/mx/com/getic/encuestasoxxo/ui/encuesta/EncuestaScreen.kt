@@ -32,6 +32,7 @@ import mx.com.getic.encuestasoxxo.R
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 import timber.log.Timber
 
 // La pregunta del PFS no tiene un flag propio en el schema (ver
@@ -79,6 +80,11 @@ fun EncuestaScreen(
             )
         },
     ) { padding ->
+        LoadingOverlay(
+            mensaje = if (estado.enviando) "Enviando encuesta..." else "Cargando datos...",
+            mostrar = estado.cargandoCatalogo || estado.cargandoAtis || estado.cargandoPreguntas || estado.enviando || estado.asignandoAti
+        )
+
         if (estado.enviadoOk) {
             PantallaAgradecimiento(
                 tiendaNombre = estado.tiendaSeleccionada?.nombre.orEmpty(),

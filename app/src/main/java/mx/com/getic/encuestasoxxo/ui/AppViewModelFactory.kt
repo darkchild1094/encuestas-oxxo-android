@@ -71,7 +71,12 @@ class AppViewModelFactory(
             }
             SyncViewModel::class.java -> {
                 requireNotNull(sesion)
-                SyncViewModel(container.generalSyncManager, container.sessionManager, sesion) as T
+                SyncViewModel(
+                    container.generalSyncManager,
+                    container.sessionManager,
+                    container.updateManager,
+                    sesion
+                ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

@@ -102,6 +102,15 @@ private val MIGRACION_6_7 = object : Migration(6, 7) {
     }
 }
 
+private val MIGRACION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_tienda_cache_plazaId` ON `tienda_cache` (`plazaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_region_cache_negocioId` ON `region_cache` (`negocioId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_plaza_cache_regionId` ON `plaza_cache` (`regionId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pregunta_cache_cuestionarioId` ON `pregunta_cache` (`cuestionarioId`)")
+    }
+}
+
 @Database(
     entities = [
         CuestionarioEntity::class,
@@ -117,7 +126,7 @@ private val MIGRACION_6_7 = object : Migration(6, 7) {
         UsuarioEntity::class,
         RolEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -138,7 +147,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "encuestas_oxxo.db"
-                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7).build().also { instancia = it }
+                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8).build().also { instancia = it }
             }
     }
 }

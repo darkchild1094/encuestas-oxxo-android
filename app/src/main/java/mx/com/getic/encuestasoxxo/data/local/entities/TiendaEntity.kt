@@ -1,12 +1,13 @@
 package mx.com.getic.encuestasoxxo.data.local.entities
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-// Cache local de las tiendas de la plaza del usuario. Se refresca cada
-// vez que hay señal (tipicamente al iniciar sesion), y sirve de
-// respaldo cuando el selector de tienda se abre sin conexion.
-@Entity(tableName = "tienda_cache")
+@Entity(
+    tableName = "tienda_cache",
+    indices = [Index(value = ["plazaId"])]
+)
 data class TiendaEntity(
     @PrimaryKey val id: Int,
     val plazaId: Int,

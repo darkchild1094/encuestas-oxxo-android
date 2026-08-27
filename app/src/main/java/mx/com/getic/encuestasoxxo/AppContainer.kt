@@ -13,6 +13,7 @@ import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
 import mx.com.getic.encuestasoxxo.data.repository.CatalogoRepository
 import mx.com.getic.encuestasoxxo.domain.EncuestaSyncManager
 import mx.com.getic.encuestasoxxo.domain.GeneralSyncManager
+import mx.com.getic.encuestasoxxo.utils.UpdateManager
 
 // Service Locator simple: un solo lugar donde se arman las
 // dependencias, sin librerias de DI. Para el tamano de esta app
@@ -50,5 +51,9 @@ class AppContainer(context: Context) {
 
     val generalSyncManager: GeneralSyncManager by lazy {
         GeneralSyncManager(database, api)
+    }
+
+    val updateManager: UpdateManager by lazy {
+        UpdateManager(context, api)
     }
 }

@@ -1,12 +1,13 @@
 package mx.com.getic.encuestasoxxo.data.local.entities
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-// Solo preguntas activas -- el soft-delete (activo=0) del lado
-// PHP nunca las manda en /api/cuestionario, asi que aqui no hace
-// falta ni guardar esa bandera.
-@Entity(tableName = "pregunta_cache")
+@Entity(
+    tableName = "pregunta_cache",
+    indices = [Index(value = ["cuestionarioId"])]
+)
 data class PreguntaEntity(
     @PrimaryKey val id: Int,
     val cuestionarioId: Int,

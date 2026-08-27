@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import mx.com.getic.encuestasoxxo.data.Sesion
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +71,8 @@ fun PerfilScreen(
             )
         }
     ) { padding ->
+        LoadingOverlay(mostrar = estado.cargando)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()

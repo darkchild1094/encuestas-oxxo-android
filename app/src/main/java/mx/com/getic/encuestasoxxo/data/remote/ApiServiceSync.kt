@@ -33,7 +33,18 @@ interface ApiServiceSync {
     suspend fun obtenerEncuestasPendientesPFS(
         @Header("Authorization") token: String
     ): PFSPendientesResponse
+
+    @GET("check-update")
+    suspend fun verificarActualizacion(): UpdateResponse
 }
+
+data class UpdateResponse(
+    val version_code: Int,
+    val version_name: String,
+    val url: String,
+    val obligatoria: Boolean,
+    val novedades: String? = null
+)
 
 data class PFSPendientesResponse(
     val total_encuestas: Int,

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import mx.com.getic.encuestasoxxo.data.remote.dto.*
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 import java.io.File
 
 class UsuariosViewModel(
@@ -135,6 +136,8 @@ fun UsuariosScreen(
             }
         }
     ) { padding ->
+        LoadingOverlay(mostrar = viewModel.cargando)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

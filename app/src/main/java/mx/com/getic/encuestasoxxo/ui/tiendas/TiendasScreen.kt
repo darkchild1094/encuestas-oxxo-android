@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
+import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +63,8 @@ fun TiendasScreen(
             )
         }
     ) { padding ->
+        LoadingOverlay(mostrar = viewModel.cargando || viewModel.guardando)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
