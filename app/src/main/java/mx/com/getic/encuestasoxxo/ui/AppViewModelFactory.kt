@@ -12,7 +12,7 @@ import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
-import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasViewModel
+import mx.com.getic.encuestasoxxo.ui.dashboard.DashboardViewModel
 import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
 import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
 
@@ -56,9 +56,9 @@ class AppViewModelFactory(
                 requireNotNull(sesion)
                 PerfilViewModel(container.usuarioRepository, container.sessionManager, container.updateManager, sesion) as T
             }
-            EstadisticasViewModel::class.java -> {
+            DashboardViewModel::class.java -> {
                 requireNotNull(sesion)
-                EstadisticasViewModel(container.estadisticasRepository, sesion) as T
+                DashboardViewModel(container.dashboardRepository, sesion) as T
             }
             PFSModuloViewModel::class.java -> {
                 requireNotNull(sesion)

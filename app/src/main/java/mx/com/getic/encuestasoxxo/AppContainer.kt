@@ -8,7 +8,7 @@ import mx.com.getic.encuestasoxxo.data.local.AppDatabase
 import mx.com.getic.encuestasoxxo.data.remote.RetrofitClient
 import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
-import mx.com.getic.encuestasoxxo.data.repository.EstadisticasRepository
+import mx.com.getic.encuestasoxxo.data.repository.DashboardRepository
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
 import mx.com.getic.encuestasoxxo.data.repository.CatalogoRepository
 import mx.com.getic.encuestasoxxo.domain.EncuestaSyncManager
@@ -33,8 +33,8 @@ class AppContainer(context: Context) {
         EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), database.tiendaDao(), database.atiDao(), sessionManager)
     }
 
-    val estadisticasRepository: EstadisticasRepository by lazy {
-        EstadisticasRepository(api, sessionManager)
+    val dashboardRepository: DashboardRepository by lazy {
+        DashboardRepository(api, sessionManager)
     }
 
     val usuarioRepository: UsuarioRepository by lazy {

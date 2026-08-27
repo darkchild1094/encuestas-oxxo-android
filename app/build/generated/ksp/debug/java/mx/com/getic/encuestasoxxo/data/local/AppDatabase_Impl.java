@@ -58,14 +58,16 @@ public final class AppDatabase_Impl extends AppDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(7) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(8) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `cuestionario_cache` (`id` INTEGER NOT NULL, `plazaId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `pregunta_cache` (`id` INTEGER NOT NULL, `cuestionarioId` INTEGER NOT NULL, `texto` TEXT NOT NULL, `orden` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pregunta_cache_cuestionarioId` ON `pregunta_cache` (`cuestionarioId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `encuesta` (`id` TEXT NOT NULL, `usuarioId` INTEGER NOT NULL, `tiendaId` INTEGER NOT NULL, `cuestionarioId` INTEGER NOT NULL, `folio` TEXT NOT NULL, `comentario` TEXT, `fechaCreacionLocal` TEXT NOT NULL, `sincronizado` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `respuesta_detalle` (`id` TEXT NOT NULL, `encuestaId` TEXT NOT NULL, `preguntaId` INTEGER NOT NULL, `calificacion` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `tienda_cache` (`id` INTEGER NOT NULL, `plazaId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `codigo` TEXT NOT NULL, `direccion` TEXT, `latitud` REAL, `longitud` REAL, `atiUsuarioId` INTEGER, `atiNombre` TEXT, `atiFoto` TEXT, `atiGenero` TEXT, `atiPendienteUsuarioId` INTEGER, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_tienda_cache_plazaId` ON `tienda_cache` (`plazaId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `ati_cache` (`plazaId` INTEGER NOT NULL, `id` INTEGER NOT NULL, `nombreCompleto` TEXT NOT NULL, `fotoPerfil` TEXT, `genero` TEXT, PRIMARY KEY(`plazaId`, `id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `encuesta_sync_log` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `encuesta_id` TEXT NOT NULL, `estado` TEXT NOT NULL, `intento_numero` INTEGER NOT NULL, `codigo_respuesta` INTEGER, `mensaje_error` TEXT, `handshake_id` TEXT, `confirmado_servidor` INTEGER NOT NULL, `fecha_intento` INTEGER NOT NULL, `fecha_confirmacion` INTEGER, FOREIGN KEY(`encuesta_id`) REFERENCES `encuesta`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_encuesta_sync_log_encuesta_id` ON `encuesta_sync_log` (`encuesta_id`)");
@@ -73,11 +75,13 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_encuesta_sync_log_handshake_id` ON `encuesta_sync_log` (`handshake_id`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `negocio_cache` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `region_cache` (`id` INTEGER NOT NULL, `negocioId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `cr` TEXT, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_region_cache_negocioId` ON `region_cache` (`negocioId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `plaza_cache` (`id` INTEGER NOT NULL, `regionId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `cr` TEXT, `esDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_plaza_cache_regionId` ON `plaza_cache` (`regionId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `usuario_cache` (`id` INTEGER NOT NULL, `correo` TEXT NOT NULL, `nombreCompleto` TEXT, `fotoPerfil` TEXT, `genero` TEXT, `plazaId` INTEGER, `plazaNombre` TEXT, `rol` TEXT NOT NULL, `gestionaPreguntas` INTEGER NOT NULL, `gestionaUsuarios` INTEGER NOT NULL, `esEncuestable` INTEGER NOT NULL, `veResultadosTiendas` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `rol_cache` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '19bb66e374a27341322a64343cee6f2a')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '44868abf5abc0804625215649b3a7c4f')");
       }
 
       @Override
@@ -157,7 +161,8 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsPreguntaCache.put("texto", new TableInfo.Column("texto", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsPreguntaCache.put("orden", new TableInfo.Column("orden", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysPreguntaCache = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesPreguntaCache = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesPreguntaCache = new HashSet<TableInfo.Index>(1);
+        _indicesPreguntaCache.add(new TableInfo.Index("index_pregunta_cache_cuestionarioId", false, Arrays.asList("cuestionarioId"), Arrays.asList("ASC")));
         final TableInfo _infoPreguntaCache = new TableInfo("pregunta_cache", _columnsPreguntaCache, _foreignKeysPreguntaCache, _indicesPreguntaCache);
         final TableInfo _existingPreguntaCache = TableInfo.read(db, "pregunta_cache");
         if (!_infoPreguntaCache.equals(_existingPreguntaCache)) {
@@ -211,7 +216,8 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsTiendaCache.put("atiGenero", new TableInfo.Column("atiGenero", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTiendaCache.put("atiPendienteUsuarioId", new TableInfo.Column("atiPendienteUsuarioId", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysTiendaCache = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesTiendaCache = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesTiendaCache = new HashSet<TableInfo.Index>(1);
+        _indicesTiendaCache.add(new TableInfo.Index("index_tienda_cache_plazaId", false, Arrays.asList("plazaId"), Arrays.asList("ASC")));
         final TableInfo _infoTiendaCache = new TableInfo("tienda_cache", _columnsTiendaCache, _foreignKeysTiendaCache, _indicesTiendaCache);
         final TableInfo _existingTiendaCache = TableInfo.read(db, "tienda_cache");
         if (!_infoTiendaCache.equals(_existingTiendaCache)) {
@@ -278,7 +284,8 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsRegionCache.put("cr", new TableInfo.Column("cr", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsRegionCache.put("esDefault", new TableInfo.Column("esDefault", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysRegionCache = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesRegionCache = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesRegionCache = new HashSet<TableInfo.Index>(1);
+        _indicesRegionCache.add(new TableInfo.Index("index_region_cache_negocioId", false, Arrays.asList("negocioId"), Arrays.asList("ASC")));
         final TableInfo _infoRegionCache = new TableInfo("region_cache", _columnsRegionCache, _foreignKeysRegionCache, _indicesRegionCache);
         final TableInfo _existingRegionCache = TableInfo.read(db, "region_cache");
         if (!_infoRegionCache.equals(_existingRegionCache)) {
@@ -293,7 +300,8 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsPlazaCache.put("cr", new TableInfo.Column("cr", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsPlazaCache.put("esDefault", new TableInfo.Column("esDefault", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysPlazaCache = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesPlazaCache = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesPlazaCache = new HashSet<TableInfo.Index>(1);
+        _indicesPlazaCache.add(new TableInfo.Index("index_plaza_cache_regionId", false, Arrays.asList("regionId"), Arrays.asList("ASC")));
         final TableInfo _infoPlazaCache = new TableInfo("plaza_cache", _columnsPlazaCache, _foreignKeysPlazaCache, _indicesPlazaCache);
         final TableInfo _existingPlazaCache = TableInfo.read(db, "plaza_cache");
         if (!_infoPlazaCache.equals(_existingPlazaCache)) {
@@ -337,7 +345,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "19bb66e374a27341322a64343cee6f2a", "7d2f96d6a059af0e4631e0b04cf9ec5e");
+    }, "44868abf5abc0804625215649b3a7c4f", "f0ad01cd819364c3089e6c1523763378");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

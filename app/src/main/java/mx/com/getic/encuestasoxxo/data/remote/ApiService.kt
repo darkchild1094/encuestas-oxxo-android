@@ -146,4 +146,28 @@ interface ApiService : ApiServiceSync {
         @Query("desde") desde: String? = null,
         @Query("hasta") hasta: String? = null
     ): List<PromedioPreguntaDto>
+
+    @GET("estadisticas/plaza/atis")
+    suspend fun estadisticasPlazaAtis(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
+
+    @GET("estadisticas/plaza/tiendas")
+    suspend fun estadisticasPlazaTiendas(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
+
+    @GET("estadisticas/pfs/desempeno")
+    suspend fun estadisticasPfsIndividual(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
 }

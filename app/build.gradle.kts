@@ -13,8 +13,8 @@ android {
         applicationId = "mx.com.getic.encuestasoxxo"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.6.0"
+        versionCode = 8
+        versionName = "1.8.0"
         // Cambia esto por la URL real de tu servidor (el mismo host
         // donde corre /api de encuestas_web). En emulador Android,
         // 10.0.2.2 apunta al localhost de tu PC.

@@ -40,6 +40,10 @@
         "source": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-main-63:\\mipmap-xxxhdpi\\ic_launcher_round.png"
     },
     {
+        "merged": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-debug-61:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-main-63:\\xml\\file_paths.xml"
+    },
+    {
         "merged": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-debug-61:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "C:\\Users\\darkchild1094\\.gradle\\daemon\\9.3.0\\mx.com.getic.encuestasoxxo.app-main-63:\\mipmap-anydpi-v26\\ic_launcher.xml"
     },

@@ -41,8 +41,8 @@ import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasScreen
 import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasScreen
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
-import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasScreen
-import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasViewModel
+import mx.com.getic.encuestasoxxo.ui.dashboard.DashboardScreen
+import mx.com.getic.encuestasoxxo.ui.dashboard.DashboardViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosScreen
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.sync.NotificacionesWorker
@@ -61,7 +61,7 @@ object Rutas {
     const val USUARIOS = "usuarios"
     const val PREGUNTAS = "preguntas"
     const val TIENDAS = "tiendas"
-    const val ESTADISTICAS = "estadisticas"
+    const val DASHBOARD = "dashboard"
     const val RESPUESTAS = "respuestas"
     const val PERFIL = "perfil"
     const val PFS = "pfs"
@@ -229,13 +229,13 @@ fun NavGraph(container: AppContainer) {
             }
         }
 
-        composable(Rutas.ESTADISTICAS) {
+        composable(Rutas.DASHBOARD) {
             val sesion = sesionState
             if (sesion != null) {
                 ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
                     val factory = AppViewModelFactory(container, sesion)
-                    val viewModel = viewModel { factory.create(EstadisticasViewModel::class.java) }
-                    EstadisticasScreen(
+                    val viewModel = viewModel { factory.create(DashboardViewModel::class.java) }
+                    DashboardScreen(
                         viewModel = viewModel,
                         onAbrirMenu = abrirMenu,
                     )
@@ -410,10 +410,10 @@ private fun ConDrawer(
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.TIENDAS) },
                     )
                     NavigationDrawerItem(
-                        label = { Text("Estadísticas") },
+                        label = { Text("Dashboard") },
                         selected = false,
-                        icon = { Icon(Icons.Filled.BarChart, contentDescription = null) },
-                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ESTADISTICAS) },
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.DASHBOARD) },
                     )
                 }
 

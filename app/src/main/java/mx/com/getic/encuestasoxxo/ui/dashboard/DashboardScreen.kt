@@ -1,13 +1,16 @@
-package mx.com.getic.encuestasoxxo.ui.estadisticas
+package mx.com.getic.encuestasoxxo.ui.dashboard
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -16,16 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import mx.com.getic.encuestasoxxo.data.remote.dto.PromedioPreguntaDto
 import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
-import java.util.Locale
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.TimeZone
+import java.util.*
 
 private enum class CampoFecha { DESDE, HASTA }
 
@@ -36,8 +41,8 @@ private fun fechaDesdeMillis(millis: Long): String =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EstadisticasScreen(
-    viewModel: EstadisticasViewModel,
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
     onAbrirMenu: () -> Unit
 ) {
     val state = viewModel.state
@@ -46,34 +51,40 @@ fun EstadisticasScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     if (pullToRefreshState.isRefreshing) {
         LaunchedEffect(true) {
-            viewModel.cargar(state.tipoSeleccionado)
+            viewModel.cargar()
         }
     }
     
     LaunchedEffect(state.cargando) {
         if (!state.cargando) {
-            // pullToRefreshState.endRefresh()
+            // Sincronización de estado terminada
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Estadísticas de Desempeño") },
+                title = { Text("Dashboard Administrativo") },
                 navigationIcon = {
                     IconButton(onClick = onAbrirMenu) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { viewModel.cargar() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
     ) { padding ->
-        LoadingOverlay(mostrar = state.cargando)
+        LoadingOverlay(mostrar = state.cargando && !pullToRefreshState.isRefreshing)
 
         Box(
             modifier = Modifier
@@ -84,26 +95,33 @@ fun EstadisticasScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Selectores de tipo
-                TabRow(selectedTabIndex = state.tipoSeleccionado.ordinal) {
-                    TipoEstadistica.entries.forEach { tipo ->
+                // Selectores de Categoría
+                ScrollableTabRow(
+                    selectedTabIndex = state.tipoSeleccionado.ordinal,
+                    edgePadding = 16.dp,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary
+                ) {
+                    TipoDashboard.entries.forEach { tipo ->
                         Tab(
                             selected = state.tipoSeleccionado == tipo,
                             onClick = { viewModel.cargar(tipo) },
                             text = {
                                 Text(
                                     text = when (tipo) {
-                                        TipoEstadistica.PFS -> "Por PFS"
-                                        TipoEstadistica.REGION_ATI -> "ATI Región"
-                                        TipoEstadistica.REGION_PLAZA -> "Plaza Región"
+                                        TipoDashboard.ATI_PLAZA -> "ATIs Plaza"
+                                        TipoDashboard.TIENDAS_PLAZA -> "Tiendas Plaza"
+                                        TipoDashboard.ATI_REGION -> "ATIs Región"
+                                        TipoDashboard.PFS_PERFORMANCE -> "Desempeño PFS"
                                     },
-                                    style = MaterialTheme.typography.labelMedium
+                                    style = MaterialTheme.typography.labelLarge
                                 )
                             }
                         )
                     }
                 }
 
+                // Filtros de Fecha
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -111,35 +129,28 @@ fun EstadisticasScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedButton(
+                    AssistChip(
                         onClick = { campoFecha = CampoFecha.DESDE },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text("Desde: ${state.desde ?: "cualquier fecha"}")
-                    }
-                    OutlinedButton(
+                        label = { Text("Desde: ${state.desde ?: "Inicio"}") },
+                        leadingIcon = { Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp)) }
+                    )
+                    AssistChip(
                         onClick = { campoFecha = CampoFecha.HASTA },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text("Hasta: ${state.hasta ?: "cualquier fecha"}")
-                    }
+                        label = { Text("Hasta: ${state.hasta ?: "Hoy"}") }
+                    )
                     if (state.desde != null || state.hasta != null) {
                         TextButton(onClick = viewModel::limpiarFechas) {
-                            Text("Limpiar")
+                            Text("Limpiar", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
 
-                if (state.cargando && !pullToRefreshState.isRefreshing) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (state.error != null && state.datos.isEmpty()) {
+                if (state.error != null && state.datos.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.error, color = MaterialTheme.colorScheme.error)
+                            Text(state.error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                             Spacer(Modifier.height(16.dp))
-                            Button(onClick = { viewModel.cargar(state.tipoSeleccionado) }) {
+                            Button(onClick = { viewModel.cargar() }) {
                                 Text("Reintentar")
                             }
                         }
@@ -153,17 +164,19 @@ fun EstadisticasScreen(
                         item {
                             Text(
                                 text = when (state.tipoSeleccionado) {
-                                    TipoEstadistica.PFS -> "Promedio de preguntas por PFS en tu plaza"
-                                    TipoEstadistica.REGION_ATI -> "Comparativa entre ATIs de la región"
-                                    TipoEstadistica.REGION_PLAZA -> "Comparativa entre Plazas de la región"
+                                    TipoDashboard.ATI_PLAZA -> "Ranking de Asesores TI en Plaza"
+                                    TipoDashboard.TIENDAS_PLAZA -> "Desempeño por Tienda en Plaza"
+                                    TipoDashboard.ATI_REGION -> "Comparativa de Asesores en la Región"
+                                    TipoDashboard.PFS_PERFORMANCE -> "Calificación PFS (Pregunta principal)"
                                 },
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
 
                         items(state.datos) { item ->
-                            GraficaBarraPregunta(item)
+                            DashboardCard(item)
                         }
                     }
                 }
@@ -211,67 +224,97 @@ fun EstadisticasScreen(
 }
 
 @Composable
-fun GraficaBarraPregunta(item: PromedioPreguntaDto) {
-    val porcentaje = (item.promedio / 10.0).coerceIn(0.0, 1.0).toFloat()
-    val animatedProgress by animateFloatAsState(targetValue = porcentaje, label = "progreso")
-
-    val colorBarra = when {
-        item.promedio >= 9.0 -> Color(0xFF4CAF50) // Verde
-        item.promedio >= 7.0 -> Color(0xFFFFC107) // Amarillo
-        else -> Color(0xFFF44336) // Rojo
+fun DashboardCard(item: PromedioPreguntaDto) {
+    val colorBase = when {
+        item.promedio >= 9.0 -> Color(0xFF4CAF50)
+        item.promedio >= 7.0 -> Color(0xFFFFC107)
+        else -> Color(0xFFF44336)
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            // Gráfica Circular de Progreso
+            CircularScore(score = item.promedio, color = colorBase)
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.pregunta_texto,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "%.1f", item.promedio),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = colorBarra
+                    text = "${item.total_encuestas} evaluaciones",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
                 )
-            }
-
-            // Barra de progreso personalizada
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(animatedProgress)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(colorBarra)
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                LinearProgressIndicator(
+                    progress = { (item.promedio / 10f).toFloat() },
+                    modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                    color = colorBase,
+                    trackColor = colorBase.copy(alpha = 0.1f)
                 )
             }
             
             Text(
-                text = "${item.total_encuestas} encuestas realizadas",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
+                text = String.format(Locale.getDefault(), "%.1f", item.promedio),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = colorBase
             )
         }
+    }
+}
+
+@Composable
+fun CircularScore(score: Double, color: Color) {
+    val sweepAngle by animateFloatAsState(
+        targetValue = (score / 10f * 360f).toFloat(),
+        label = "sweep"
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(60.dp)
+    ) {
+        Canvas(modifier = Modifier.size(54.dp)) {
+            // Fondo
+            drawArc(
+                color = color.copy(alpha = 0.15f),
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+            )
+            // Progreso
+            drawArc(
+                color = color,
+                startAngle = -90f,
+                sweepAngle = sweepAngle,
+                useCenter = false,
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = "${(score * 10).toInt()}%",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp
+        )
     }
 }
