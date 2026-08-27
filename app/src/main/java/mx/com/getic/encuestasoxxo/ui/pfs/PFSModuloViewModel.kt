@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import mx.com.getic.encuestasoxxo.data.local.AppDatabase
-import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaPFSDto
+import mx.com.getic.encuestasoxxo.data.remote.EncuestaPFSDto
 import mx.com.getic.encuestasoxxo.data.remote.ApiService
 import mx.com.getic.encuestasoxxo.domain.EncuestaSyncManager
 import kotlinx.coroutines.flow.MutableStateFlow

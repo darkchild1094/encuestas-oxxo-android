@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaPFSDto
+import mx.com.getic.encuestasoxxo.data.remote.EncuestaPFSDto
 
 @Composable
 fun PFSModuloScreen(
