@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.LocalDateTime
 
 @Entity(
     tableName = "encuesta_sync_log",
@@ -32,8 +31,8 @@ data class EncuestaSyncLogEntity(
     val mensaje_error: String? = null,
     val handshake_id: String? = null,
     val confirmado_servidor: Boolean = false,
-    val fecha_intento: LocalDateTime = LocalDateTime.now(),
-    val fecha_confirmacion: LocalDateTime? = null
+    val fecha_intento: Long = System.currentTimeMillis(),
+    val fecha_confirmacion: Long? = null
 )
 
 data class SyncInitResponse(
