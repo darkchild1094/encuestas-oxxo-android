@@ -235,7 +235,7 @@ class EncuestaViewModel(
     }
 
     fun onFolioChange(valor: String) {
-        estado = estado.copy(folio = valor.take(50))
+        estado = estado.copy(folio = valor.take(11))
     }
 
     val faltanPorCalificar: Int get() = estado.preguntas.count { estado.calificaciones[it.id] == null }

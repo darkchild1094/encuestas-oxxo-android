@@ -11,10 +11,11 @@ android {
 
     defaultConfig {
         applicationId = "mx.com.getic.encuestasoxxo"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 8
         versionName = "1.8.0"
+        multiDexEnabled = true
         // Cambia esto por la URL real de tu servidor (el mismo host
         // donde corre /api de encuestas_web). En emulador Android,
         // 10.0.2.2 apunta al localhost de tu PC.
@@ -35,6 +36,21 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/license.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/notice.txt"
+            excludes += "META-INF/ASL2.0"
+            excludes += "META-INF/*.kotlin_module"
+        }
     }
 
     compileOptions {
@@ -81,6 +97,14 @@ dependencies {
 
     // Timber (logging)
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Apache POI (Excel)
+    implementation("org.apache.poi:poi-ooxml:5.2.2") {
+        exclude(group = "org.apache.xmlbeans", module = "xmlbeans")
+    }
+    implementation("org.apache.xmlbeans:xmlbeans:5.0.3")
+
+    // Note: Log4j 2.18.0+ and POI 5.2.x+ require Android API 26+ due to MethodHandle usage
 
     // Coroutines (ya incluído por otras dependencias, pero explícito)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

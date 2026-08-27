@@ -1,8 +1,11 @@
 package mx.com.getic.encuestasoxxo.ui.encuesta
 
 import android.widget.Toast
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -19,14 +21,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import mx.com.getic.encuestasoxxo.R
 import mx.com.getic.encuestasoxxo.data.Sesion
@@ -34,6 +41,7 @@ import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
 import mx.com.getic.encuestasoxxo.ui.components.LoadingOverlay
 import timber.log.Timber
+import kotlin.random.Random
 
 // La pregunta del PFS no tiene un flag propio en el schema (ver
 // nota en pregunta.texto): se identifica por texto. Si en algun
@@ -45,10 +53,6 @@ private fun esPreguntaDePfs(texto: String): Boolean =
 private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
     if (rutaFoto.isNullOrBlank()) return null
     if (rutaFoto.startsWith("http")) return rutaFoto
-    // OJO: sin /public/ -- alwaysdata sirve la carpeta public/ del repo
-    // directamente como raiz de /nps/ (ver RewriteBase /nps/ dentro de
-    // public/.htaccess), asi que agregar /public/ aqui duplica la ruta
-    // y la foto no carga. Mismo patron que ya usa UsuariosScreen.kt.
     val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
     return "$base/$rutaFoto"
 }
@@ -85,174 +89,267 @@ fun EncuestaScreen(
             mostrar = estado.cargandoCatalogo || estado.cargandoAtis || estado.cargandoPreguntas || estado.enviando || estado.asignandoAti
         )
 
-        if (estado.enviadoOk) {
-            PantallaAgradecimiento(
-                tiendaNombre = estado.tiendaSeleccionada?.nombre.orEmpty(),
-                folio = estado.folio,
-                onReiniciar = { viewModel.reiniciarParaNuevaEncuesta() },
-                modifier = Modifier.padding(padding)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = estado.folio,
-                        onValueChange = viewModel::onFolioChange,
-                        label = { Text("Número de folio") },
-                        placeholder = { Text("INC") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                    )
-                }
-
-                if (estado.folio.isNotBlank()) {
-                if (estado.tiendaSeleccionada != null) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (estado.enviadoOk) {
+                PantallaAgradecimiento(
+                    tiendaNombre = estado.tiendaSeleccionada?.nombre.orEmpty(),
+                    folio = estado.folio,
+                    onReiniciar = { viewModel.reiniciarParaNuevaEncuesta() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     item {
-                        val plaza = estado.plazas.firstOrNull { it.id == estado.tiendaSeleccionada.plaza_id }
-                        val pNombre = plaza?.nombre ?: sesion.plazaNombre ?: ""
-                        HeaderTienda(
-                            tienda = estado.tiendaSeleccionada,
-                            plazaNombre = pNombre,
-                            onCambiarTienda = { viewModel.onTiendaSeleccionada(-1) }
+                        if (estado.tiendaSeleccionada == null) {
+                            Text(
+                                text = "Hola ${sesion.nombreCompleto}, ingresa el número de incidente.",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                        OutlinedTextField(
+                            value = estado.folio,
+                            onValueChange = viewModel::onFolioChange,
+                            label = { Text("Número de folio") },
+                            placeholder = { Text("INC") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
                         )
                     }
 
-                    item {
-                        SaludoAti(
-                            tienda = estado.tiendaSeleccionada,
-                            atisDisponibles = estado.atisDisponibles,
-                            cargandoAtis = estado.cargandoAtis,
-                            asignandoAti = estado.asignandoAti,
-                            apiBaseUrl = apiBaseUrl,
-                            onSeleccionarAti = viewModel::onAtiSeleccionado,
-                        )
-                    }
+                    if (estado.folio.isNotBlank()) {
+                        if (estado.tiendaSeleccionada != null) {
+                            item {
+                                val plaza = estado.plazas.firstOrNull { it.id == estado.tiendaSeleccionada.plaza_id }
+                                val pNombre = plaza?.nombre ?: sesion.plazaNombre ?: ""
+                                HeaderTienda(
+                                    tienda = estado.tiendaSeleccionada,
+                                    plazaNombre = pNombre,
+                                    onCambiarTienda = { viewModel.onTiendaSeleccionada(-1) }
+                                )
+                            }
 
-                    item {
-                        Text(
-                            text = "Ayúdame a responder las siguientes preguntas por favor:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                } else {
-                    item {
-                        val mostrarSelectores = !estado.plazaFija && sesion.rol != "ATI" && sesion.rol != "WEBMASTER"
+                            item {
+                                SaludoAti(
+                                    tienda = estado.tiendaSeleccionada,
+                                    atisDisponibles = estado.atisDisponibles,
+                                    cargandoAtis = estado.cargandoAtis,
+                                    asignandoAti = estado.asignandoAti,
+                                    apiBaseUrl = apiBaseUrl,
+                                    onSeleccionarAti = viewModel::onAtiSeleccionado,
+                                )
+                            }
 
-                        if (estado.plazaFija || !mostrarSelectores) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (sesion.plazaId != null) {
-                                    Text(
-                                        "Plaza: ${sesion.plazaNombre ?: ""}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                    )
+                            item {
+                                Text(
+                                    text = "Ayúdame a responder las siguientes preguntas por favor:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        } else {
+                            item {
+                                val mostrarSelectores = !estado.plazaFija && sesion.rol != "ATI" && sesion.rol != "WEBMASTER"
+
+                                if (estado.plazaFija || !mostrarSelectores) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        if (sesion.plazaId != null) {
+                                            Text(
+                                                "Plaza: ${sesion.plazaNombre ?: ""}",
+                                                style = MaterialTheme.typography.labelLarge,
+                                            )
+                                        } else {
+                                            Text(
+                                                "Error: No tienes una plaza asignada en tu perfil.",
+                                                color = MaterialTheme.colorScheme.error,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+
+                                        BuscadorTienda(
+                                            tiendas = estado.tiendas,
+                                            seleccionId = estado.tiendaId,
+                                            onSeleccionar = viewModel::onTiendaSeleccionada,
+                                        )
+                                    }
                                 } else {
-                                    Text(
-                                        "Error: No tienes una plaza asignada en tu perfil.",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodyMedium
+                                    SelectorUnidad(
+                                        estado = estado,
+                                        onNegocio = viewModel::onNegocioSeleccionado,
+                                        onRegion = viewModel::onRegionSeleccionada,
+                                        onPlaza = viewModel::onPlazaSeleccionada,
+                                        onTienda = viewModel::onTiendaSeleccionada,
                                     )
                                 }
-
-                                BuscadorTienda(
-                                    tiendas = estado.tiendas,
-                                    seleccionId = estado.tiendaId,
-                                    onSeleccionar = viewModel::onTiendaSeleccionada,
-                                )
                             }
-                        } else {
-                            SelectorUnidad(
-                                estado = estado,
-                                onNegocio = viewModel::onNegocioSeleccionado,
-                                onRegion = viewModel::onRegionSeleccionada,
-                                onPlaza = viewModel::onPlazaSeleccionada,
-                                onTienda = viewModel::onTiendaSeleccionada,
-                            )
                         }
                     }
-                }
-                }
 
-                if (estado.cargandoPreguntas) {
-                    item {
-                        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
-
-                items(estado.preguntas, key = { it.id }) { pregunta ->
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        if (esPreguntaDePfs(pregunta.texto)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) { urlFoto(sesion.fotoPerfil, apiBaseUrl) }
-                                AvatarGafete(fotoUrl, width = 100.dp)
-                                Text(
-                                    text = pregunta.texto,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.weight(1f)
-                                )
+                    if (estado.cargandoPreguntas) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
-                        } else {
-                            Text(pregunta.texto, style = MaterialTheme.typography.titleMedium)
-                        }
-
-                        NpsFaceSelector(
-                            seleccion = estado.calificaciones[pregunta.id],
-                            onSeleccionar = { viewModel.onCalificar(pregunta.id, it) },
-                        )
-                    }
-                }
-
-                if (estado.preguntas.isNotEmpty()) {
-                    // Pregunta abierta, fija siempre al final (despues de
-                    // la calificacion general de TI): reutiliza
-                    // encuesta.comentario, que ya viaja end-to-end al
-                    // backend -- no es una fila de `pregunta`.
-                    item {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                "¿Qué podríamos mejorar en el servicio de TI para facilitar tu operación diaria en tienda?",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            OutlinedTextField(
-                                value = estado.comentario,
-                                onValueChange = viewModel::onComentarioChange,
-                                placeholder = { Text("Escriba sus comentarios aquí...") },
-                                minLines = 3,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = MaterialTheme.shapes.medium,
-                            )
                         }
                     }
-                    item {
-                        Button(
-                            onClick = { viewModel.enviar(context) { } },
-                            enabled = !estado.enviando,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            if (estado.enviando) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+
+                    items(estado.preguntas, key = { it.id }) { pregunta ->
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (esPreguntaDePfs(pregunta.texto)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val fotoUrl = remember(sesion.fotoPerfil, apiBaseUrl) { urlFoto(sesion.fotoPerfil, apiBaseUrl) }
+                                    AvatarGafete(fotoUrl, width = 100.dp)
+                                    Text(
+                                        text = pregunta.texto,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
                             } else {
-                                Text("Enviar")
+                                Text(pregunta.texto, style = MaterialTheme.typography.titleMedium)
+                            }
+
+                            NpsFaceSelector(
+                                seleccion = estado.calificaciones[pregunta.id],
+                                onSeleccionar = { viewModel.onCalificar(pregunta.id, it) },
+                            )
+                        }
+                    }
+
+                    if (estado.preguntas.isNotEmpty()) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "¿Qué podríamos mejorar en el servicio de TI para facilitar tu operación diaria en tienda?",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                OutlinedTextField(
+                                    value = estado.comentario,
+                                    onValueChange = viewModel::onComentarioChange,
+                                    placeholder = { Text("Escriba sus comentarios aquí...") },
+                                    minLines = 3,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                )
+                            }
+                        }
+                        item {
+                            Button(
+                                onClick = { viewModel.enviar(context) { } },
+                                enabled = !estado.enviando,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                if (estado.enviando) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                } else {
+                                    Text("Enviar")
+                                }
                             }
                         }
                     }
-                }
 
-                item { Spacer(Modifier.height(24.dp)) }
+                    item { Spacer(Modifier.height(24.dp)) }
+                }
             }
+
+            // Caritas volando si no hay tienda seleccionada
+            if (estado.tiendaSeleccionada == null && !estado.enviadoOk) {
+                NpsFlyingFaces(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(200.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun NpsFlyingFaces(modifier: Modifier = Modifier) {
+    val count = 15
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        repeat(count) { i ->
+            CaritaFlotante(i)
+        }
+    }
+}
+
+@Composable
+private fun CaritaFlotante(index: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "nps_fly")
+    
+    // Valores aleatorios iniciales basados en el index para que no salgan todas iguales
+    val randomX = remember { Random.nextFloat() }
+    val randomDelay = remember { Random.nextInt(0, 3000) }
+    val randomDuration = remember { Random.nextInt(4000, 7000) }
+    val caritaNum = remember { Random.nextInt(1, 11) }
+    val color = colorParaNps(caritaNum)
+
+    val translateY by infiniteTransition.animateFloat(
+        initialValue = 300f,
+        targetValue = -300f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = randomDuration, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+            initialStartOffset = StartOffset(randomDelay)
+        ),
+        label = "y"
+    )
+
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = randomDuration
+                0.0f at 0 with LinearEasing
+                0.8f at (randomDuration * 0.2f).toInt()
+                0.8f at (randomDuration * 0.8f).toInt()
+                0.0f at randomDuration
+            },
+            repeatMode = RepeatMode.Restart,
+            initialStartOffset = StartOffset(randomDelay)
+        ),
+        label = "alpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .offset(x = (randomX * 300 - 150).dp, y = translateY.dp)
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = alpha * 0.4f))
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val ojoColor = Color.White.copy(alpha = alpha)
+
+            // Ojos
+            drawCircle(ojoColor, radius = w * 0.05f, center = Offset(w * 0.35f, h * 0.4f))
+            drawCircle(ojoColor, radius = w * 0.05f, center = Offset(w * 0.65f, h * 0.4f))
+
+            // Boca
+            val mouthY = h * 0.65f
+            val curvatura = when {
+                caritaNum <= 6 -> -h * 0.1f
+                caritaNum <= 8 -> 0f
+                else -> h * 0.1f
+            }
+            val path = Path().apply {
+                moveTo(w * 0.3f, mouthY)
+                quadraticBezierTo(w / 2f, mouthY + curvatura, w * 0.7f, mouthY)
+            }
+            drawPath(path, color = ojoColor, style = Stroke(width = w * 0.05f))
         }
     }
 }

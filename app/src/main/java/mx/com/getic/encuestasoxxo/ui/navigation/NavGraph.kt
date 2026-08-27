@@ -2,6 +2,7 @@ package mx.com.getic.encuestasoxxo.ui.navigation
 
 import android.Manifest
 import android.app.Activity
+import android.widget.Toast
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.layout.*
@@ -52,6 +53,46 @@ import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloScreen
 import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
 import mx.com.getic.encuestasoxxo.ui.sync.SyncScreen
 import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
+import mx.com.getic.encuestasoxxo.utils.excel.ExcelGenerator
+
+import android.content.Intent
+import android.net.Uri
+import mx.com.getic.encuestasoxxo.ui.dashboard.TipoDashboard
+
+private suspend fun exportarReporteCompleto(
+    context: android.content.Context,
+    dashboardVm: DashboardViewModel,
+    historialVm: HistorialViewModel,
+    dashboardRepo: mx.com.getic.encuestasoxxo.data.repository.DashboardRepository,
+    plazaId: Int?
+) {
+    if (plazaId == null) return
+    
+    // Obtenemos todos los datos para las hojas
+    val respuestas = historialVm.estado.respuestasRaw
+    val statsAtis = dashboardRepo.obtenerEstadisticasPlazaAtis(plazaId, null, null)
+    val statsTiendas = dashboardRepo.obtenerEstadisticasPlazaTiendas(plazaId, null, null)
+    val statsPfs = dashboardRepo.obtenerEstadisticasPfsIndividual(plazaId, null, null)
+
+    val uri = ExcelGenerator.generarReporteCompleto(
+        context,
+        respuestas,
+        statsAtis,
+        statsTiendas,
+        statsPfs
+    )
+
+    if (uri != null) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Compartir Reporte Integral"))
+    } else {
+        Toast.makeText(context, "Error al generar el archivo", Toast.LENGTH_SHORT).show()
+    }
+}
 
 object Rutas {
     const val LOGIN = "login"
@@ -120,7 +161,7 @@ fun NavGraph(container: AppContainer) {
                         navController.navigate(Rutas.CHANGE_PASSWORD) { popUpTo(Rutas.LOGIN) { inclusive = true } }
                     } else {
                         val destino = when (rol) {
-                            "ATI" -> Rutas.HISTORIAL
+                            "ATI" -> Rutas.DASHBOARD
                             "WEBMASTER" -> Rutas.USUARIOS
                             else -> Rutas.ENCUESTA
                         }
@@ -146,6 +187,7 @@ fun NavGraph(container: AppContainer) {
                 SyncScreen(viewModel = viewModel, onTerminado = {
                     val destino = when {
                         sesion.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
+                        sesion.rol == "ATI" -> Rutas.DASHBOARD
                         sesion.esEncuestable -> Rutas.ENCUESTA
                         sesion.rol == "WEBMASTER" -> Rutas.USUARIOS
                         else -> Rutas.HISTORIAL
@@ -376,13 +418,50 @@ private fun ConDrawer(
                     onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PFS) },
                 )
 
-                // Solo ATI consulta respuestas; el admin no accede a este modulo.
-                if (sesion.rol == "ATI" && sesion.veResultadosTiendas) {
+                if (sesion.rol == "ATI") {
                     NavigationDrawerItem(
-                        label = { Text("Respuestas de tiendas") },
+                        label = { Text("Dashboard") },
                         selected = false,
-                        icon = { Icon(Icons.Filled.History, contentDescription = null) },
-                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.HISTORIAL) },
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.DASHBOARD) },
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Exportar Reporte Excel") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.FileDownload, contentDescription = null) },
+                        onClick = { 
+                            scope.launch { 
+                                drawerState.close()
+                                // Aquí llamaremos a una función global de exportación
+                                Toast.makeText(context, "Generando reporte completo...", Toast.LENGTH_LONG).show()
+                                val factory = AppViewModelFactory(container, sesion)
+                                val dashboardVm = factory.create(DashboardViewModel::class.java)
+                                val historialVm = factory.create(HistorialViewModel::class.java)
+                                
+                                // Lanzamos la exportación masiva
+                                exportarReporteCompleto(
+                                    context, 
+                                    dashboardVm, 
+                                    historialVm, 
+                                    container.dashboardRepository, 
+                                    sesion.plazaId
+                                )
+                            }
+                        },
+                    )
+                    if (sesion.veResultadosTiendas) {
+                        NavigationDrawerItem(
+                            label = { Text("Respuestas de tiendas") },
+                            selected = false,
+                            icon = { Icon(Icons.Filled.History, contentDescription = null) },
+                            onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.HISTORIAL) },
+                        )
+                    }
+                    NavigationDrawerItem(
+                        label = { Text("Tiendas") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.Store, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.TIENDAS) },
                     )
                 }
 
@@ -400,20 +479,6 @@ private fun ConDrawer(
                         selected = false,
                         icon = { Icon(Icons.Filled.QuestionAnswer, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PREGUNTAS) },
-                    )
-                }
-                if (sesion.rol == "ATI") {
-                    NavigationDrawerItem(
-                        label = { Text("Tiendas") },
-                        selected = false,
-                        icon = { Icon(Icons.Filled.Store, contentDescription = null) },
-                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.TIENDAS) },
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Dashboard") },
-                        selected = false,
-                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
-                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.DASHBOARD) },
                     )
                 }
 

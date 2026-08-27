@@ -45,7 +45,7 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
     
     LaunchedEffect(estado.cargando) {
         if (!estado.cargando) {
-            // pullToRefreshState.endRefresh() // No disponible en 1.2.x, se maneja solo si controlamos isRefreshing
+            // pullToRefreshState.endRefresh()
         }
     }
 

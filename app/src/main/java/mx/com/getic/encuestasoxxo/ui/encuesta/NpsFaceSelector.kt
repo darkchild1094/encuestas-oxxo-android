@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 
 // Colores identicos al ejemplo: 1-6 detractor (rojo), 7-8 pasivo
 // (amarillo), 9-10 promotor (verde).
-private fun colorPara(numero: Int): Color = when {
+internal fun colorParaNps(numero: Int): Color = when {
     numero <= 6 -> Color(0xFFDA3E64)
     numero <= 8 -> Color(0xFFF5B913)
     else -> Color(0xFF3AAE7A)
@@ -56,7 +56,7 @@ private fun CaritaNps(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val color = colorPara(numero)
+    val color = colorParaNps(numero)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier

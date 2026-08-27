@@ -28,6 +28,7 @@ data class HistorialUiState(
     val atis: List<AtiDto> = emptyList(),
     val atiSeleccionadoId: Int? = null,
     val error: String? = null,
+    val respuestasRaw: List<RespuestaFilaDto> = emptyList(),
 )
 
 class HistorialViewModel(
@@ -61,6 +62,7 @@ class HistorialViewModel(
                     encuestas = agrupar(filas),
                     atis = atis,
                     atiSeleccionadoId = atis.firstOrNull()?.id,
+                    respuestasRaw = filas,
                 )
             } catch (e: Exception) {
                 estado = estado.copy(cargando = false, error = "No se pudieron cargar las respuestas. Revisa tu conexion.")
