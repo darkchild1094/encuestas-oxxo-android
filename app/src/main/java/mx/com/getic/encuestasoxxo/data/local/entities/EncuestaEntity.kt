@@ -13,6 +13,7 @@ data class EncuestaEntity(
     val usuarioId: Int,
     val tiendaId: Int,
     val cuestionarioId: Int,
+    val folio: String,
     val comentario: String?,
     val fechaCreacionLocal: String, // formato "yyyy-MM-dd HH:mm:ss", mismo que espera MariaDB
     val sincronizado: Boolean = false

@@ -4,8 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.local.dao.CuestionarioDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
+import mx.com.getic.encuestasoxxo.data.local.dao.AtiDao
 import mx.com.getic.encuestasoxxo.data.local.dao.TiendaDao
 import mx.com.getic.encuestasoxxo.data.local.entities.CuestionarioEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.AtiEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
@@ -30,6 +32,7 @@ class EncuestaRepository(
     private val cuestionarioDao: CuestionarioDao,
     private val encuestaDao: EncuestaDao,
     private val tiendaDao: TiendaDao,
+    private val atiDao: AtiDao,
     private val sessionManager: SessionManager,
 ) {
     private suspend fun token(): String = "Bearer " + (sessionManager.sesionActualBloqueante()?.token ?: "")
@@ -49,28 +52,68 @@ class EncuestaRepository(
             val tiendas = api.tiendas(token(), plazaId)
             tiendaDao.borrarDe(plazaId)
             tiendaDao.guardar(tiendas.map { 
-                TiendaEntity(it.id, plazaId, it.nombre, it.codigo, it.direccion, it.latitud, it.longitud) 
+                TiendaEntity(
+                    id = it.id,
+                    plazaId = plazaId,
+                    nombre = it.nombre,
+                    codigo = it.codigo,
+                    direccion = it.direccion,
+                    latitud = it.latitud,
+                    longitud = it.longitud,
+                    atiUsuarioId = it.ati_usuario_id,
+                    atiNombre = it.ati_nombre,
+                    atiFoto = it.ati_foto,
+                    atiGenero = it.ati_genero,
+                )
             })
             Timber.d("Tiendas de plaza $plazaId actualizadas desde servidor: ${tiendas.size}")
             tiendas
         } catch (e: Exception) {
             Timber.w(e, "Error obteniendo tiendas, usando cache local")
             tiendaDao.obtenerPorPlaza(plazaId).map { 
-                TiendaDto(it.id, it.nombre, it.codigo, plazaId, it.direccion, it.latitud, it.longitud) 
+                TiendaDto(
+                    id = it.id,
+                    nombre = it.nombre,
+                    codigo = it.codigo,
+                    plaza_id = it.plazaId,
+                    direccion = it.direccion,
+                    latitud = it.latitud,
+                    longitud = it.longitud,
+                    ati_usuario_id = it.atiUsuarioId,
+                    ati_nombre = it.atiNombre,
+                    ati_foto = it.atiFoto,
+                    ati_genero = it.atiGenero,
+                )
             }
         }
     }
 
-    // --- ATI de la tienda: solo en linea, no se cachea (ver nota arriba). ---
-    suspend fun atisDisponibles(plazaId: Int): List<AtiDto> = try {
-        api.atisDisponibles(token(), plazaId)
-    } catch (e: Exception) {
-        Timber.w(e, "Error obteniendo ATIs disponibles")
-        emptyList()
+    // --- ATI de la tienda: se refresca de red y queda disponible offline. ---
+    suspend fun atisDisponibles(plazaId: Int): List<AtiDto> {
+        return try {
+            val atis = api.atisDisponibles(token(), plazaId)
+            atiDao.borrarDe(plazaId)
+            atiDao.guardar(atis.map { AtiEntity(plazaId, it.id, it.nombre_completo, it.foto_perfil, it.genero) })
+            atis
+        } catch (e: Exception) {
+            Timber.w(e, "Error obteniendo ATIs, usando cache local")
+            atiDao.obtenerPorPlaza(plazaId).map {
+                AtiDto(it.id, it.nombreCompleto, it.fotoPerfil, it.genero)
+            }
+        }
     }
 
     suspend fun asignarAti(tiendaId: Int, usuarioId: Int): Boolean = try {
+        val tienda = tiendaDao.obtener(tiendaId)
+        val ati = tienda?.let { tiendaCache ->
+            atiDao.obtenerPorPlaza(tiendaCache.plazaId).firstOrNull { it.id == usuarioId }
+        }
+        // La asignacion local se conserva aunque el servidor no responda.
+        if (ati != null) {
+            tiendaDao.guardarAsignacionPendiente(tiendaId, usuarioId, ati.nombreCompleto, ati.fotoPerfil, ati.genero)
+        }
         api.asignarAti(token(), AsignarAtiRequest(tiendaId, usuarioId))
+        tiendaDao.marcarAsignacionSincronizada(tiendaId)
         true
     } catch (e: Exception) {
         Timber.e(e, "Error asignando ATI a tienda $tiendaId")
@@ -123,6 +166,7 @@ class EncuestaRepository(
         usuarioId: Int,
         tiendaId: Int,
         cuestionarioId: Int,
+        folio: String,
         comentario: String?,
         calificaciones: Map<Int, Int>, // preguntaId -> 1..10
     ) {
@@ -134,6 +178,7 @@ class EncuestaRepository(
             usuarioId = usuarioId,
             tiendaId = tiendaId,
             cuestionarioId = cuestionarioId,
+            folio = folio,
             comentario = comentario?.ifBlank { null },
             fechaCreacionLocal = formato.format(Date()),
             sincronizado = false,
@@ -159,6 +204,17 @@ class EncuestaRepository(
     }
 
     suspend fun intentarSincronizarPendientes(): Boolean {
+        try {
+            tiendaDao.asignacionesPendientes().forEach { tienda ->
+                val atiId = tienda.atiPendienteUsuarioId ?: return@forEach
+                api.asignarAti(token(), AsignarAtiRequest(tienda.id, atiId))
+                tiendaDao.marcarAsignacionSincronizada(tienda.id)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error sincronizando asignaciones de ATI")
+            return false
+        }
+
         val pendientes = encuestaDao.pendientesDeSincronizar()
         if (pendientes.isEmpty()) return true
 
@@ -167,6 +223,7 @@ class EncuestaRepository(
             val dto = pendientes.map { e ->
                 EncuestaSyncDto(
                     id = e.id,
+                    folio = e.folio,
                     tienda_id = e.tiendaId,
                     cuestionario_id = e.cuestionarioId,
                     comentario = e.comentario,

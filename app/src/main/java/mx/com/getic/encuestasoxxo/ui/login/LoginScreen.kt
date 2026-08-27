@@ -46,6 +46,7 @@ fun LoginScreen(
     // todavia no se eligio ninguna (ni se esta escribiendo un correo
     // nuevo a mano).
     val mostrarListaCuentas = cuentasRecordadas.isNotEmpty() &&
+        estado.mostrarCuentasRecordadas &&
         estado.cuentaSeleccionada == null &&
         estado.correo.isBlank()
 
@@ -61,19 +62,19 @@ fun LoginScreen(
                 )
             )
             .padding(24.dp),
-        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 40.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo_pulso_ti),
                 contentDescription = "Pulso TI",
                 modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .padding(bottom = 8.dp)
+                    .fillMaxWidth(0.75f)
+                    .padding(bottom = 32.dp)
             )
 
             Text(
@@ -82,7 +83,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.outline
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
 
             Card(
                 shape = MaterialTheme.shapes.large,
@@ -246,7 +247,7 @@ private fun BurbujaUsuario(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shadowElevation = 2.dp
             ) {
-                AvatarConFoto(fotoUrl, cuenta.nombre, 56.dp)
+                AvatarConFoto(fotoUrl = fotoUrl, nombre = cuenta.nombre, size = 56.dp)
             }
             Surface(
                 modifier = Modifier
@@ -306,16 +307,27 @@ private fun BurbujaNuevaCuenta(onClick: () -> Unit) {
 }
 
 @Composable
-private fun AvatarConFoto(fotoUrl: String?, nombre: String, size: androidx.compose.ui.unit.Dp) {
-    if (fotoUrl != null) {
-        AsyncImage(
-            model = fotoUrl,
-            contentDescription = "Foto de $nombre",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-    } else {
-        AvatarInicial(nombreOCorreo = nombre, size = size)
+private fun AvatarConFoto(
+    fotoUrl: String?,
+    nombre: String,
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 40.dp
+) {
+    // Forzamos el tamaño tanto en el contenedor como en la imagen
+    // para evitar que imagenes grandes rompan el layout.
+    Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
+        if (fotoUrl != null) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = "Foto de $nombre",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        } else {
+            AvatarInicial(nombreOCorreo = nombre, size = size)
+        }
     }
 }
 

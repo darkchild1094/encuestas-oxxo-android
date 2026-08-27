@@ -8,8 +8,10 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import mx.com.getic.encuestasoxxo.data.local.dao.CuestionarioDao
 import mx.com.getic.encuestasoxxo.data.local.dao.EncuestaDao
+import mx.com.getic.encuestasoxxo.data.local.dao.AtiDao
 import mx.com.getic.encuestasoxxo.data.local.dao.TiendaDao
 import mx.com.getic.encuestasoxxo.data.local.entities.CuestionarioEntity
+import mx.com.getic.encuestasoxxo.data.local.entities.AtiEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.EncuestaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.PreguntaEntity
 import mx.com.getic.encuestasoxxo.data.local.entities.RespuestaDetalleEntity
@@ -41,6 +43,23 @@ private val MIGRACION_2_3 = object : Migration(2, 3) {
     }
 }
 
+private val MIGRACION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `atiUsuarioId` INTEGER")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `atiNombre` TEXT")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `atiFoto` TEXT")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `atiGenero` TEXT")
+        db.execSQL("ALTER TABLE `tienda_cache` ADD COLUMN `atiPendienteUsuarioId` INTEGER")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `ati_cache` (`plazaId` INTEGER NOT NULL, `id` INTEGER NOT NULL, `nombreCompleto` TEXT NOT NULL, `fotoPerfil` TEXT, `genero` TEXT, PRIMARY KEY(`plazaId`, `id`))")
+    }
+}
+
+private val MIGRACION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `encuesta` ADD COLUMN `folio` TEXT NOT NULL DEFAULT ''")
+    }
+}
+
 @Database(
     entities = [
         CuestionarioEntity::class,
@@ -48,13 +67,15 @@ private val MIGRACION_2_3 = object : Migration(2, 3) {
         EncuestaEntity::class,
         RespuestaDetalleEntity::class,
         TiendaEntity::class,
+        AtiEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun cuestionarioDao(): CuestionarioDao
     abstract fun encuestaDao(): EncuestaDao
+    abstract fun atiDao(): AtiDao
     abstract fun tiendaDao(): TiendaDao
 
     companion object {
@@ -66,7 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "encuestas_oxxo.db"
-                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3).build().also { instancia = it }
+                ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5).build().also { instancia = it }
             }
     }
 }

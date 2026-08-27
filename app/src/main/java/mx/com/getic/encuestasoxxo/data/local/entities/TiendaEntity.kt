@@ -15,4 +15,9 @@ data class TiendaEntity(
     val direccion: String? = null,
     val latitud: Double? = null,
     val longitud: Double? = null,
+    val atiUsuarioId: Int? = null,
+    val atiNombre: String? = null,
+    val atiFoto: String? = null,
+    val atiGenero: String? = null,
+    val atiPendienteUsuarioId: Int? = null,
 )

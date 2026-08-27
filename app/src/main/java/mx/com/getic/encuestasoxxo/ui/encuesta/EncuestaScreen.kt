@@ -81,6 +81,8 @@ fun EncuestaScreen(
     ) { padding ->
         if (estado.enviadoOk) {
             PantallaAgradecimiento(
+                tiendaNombre = estado.tiendaSeleccionada?.nombre.orEmpty(),
+                folio = estado.folio,
                 onReiniciar = { viewModel.reiniciarParaNuevaEncuesta() },
                 modifier = Modifier.padding(padding)
             )
@@ -92,6 +94,19 @@ fun EncuestaScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                item {
+                    OutlinedTextField(
+                        value = estado.folio,
+                        onValueChange = viewModel::onFolioChange,
+                        label = { Text("Número de folio") },
+                        placeholder = { Text("INC") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                    )
+                }
+
+                if (estado.folio.isNotBlank()) {
                 if (estado.tiendaSeleccionada != null) {
                     item {
                         val plaza = estado.plazas.firstOrNull { it.id == estado.tiendaSeleccionada.plaza_id }
@@ -156,6 +171,7 @@ fun EncuestaScreen(
                             )
                         }
                     }
+                }
                 }
 
                 if (estado.cargandoPreguntas) {
@@ -556,6 +572,8 @@ private fun DesplegableSimple(
 
 @Composable
 fun PantallaAgradecimiento(
+    tiendaNombre: String,
+    folio: String,
     onReiniciar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -569,11 +587,11 @@ fun PantallaAgradecimiento(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(
-                Icons.Filled.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.size(100.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Image(
+                painter = painterResource(R.drawable.logo_oxxo),
+                contentDescription = "Logo OXXO",
+                modifier = Modifier.size(width = 180.dp, height = 96.dp),
+                contentScale = ContentScale.Fit,
             )
 
             Text(
@@ -581,6 +599,20 @@ fun PantallaAgradecimiento(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Text(
+                text = tiendaNombre,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+
+            Text(
+                text = "Folio: $folio",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
 
             Text(

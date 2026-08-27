@@ -18,6 +18,7 @@ import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 import mx.com.getic.encuestasoxxo.sync.SincronizacionWorker
 
 data class EncuestaUiState(
+    val folio: String = "",
     val cargandoCatalogo: Boolean = true,
     val plazaFija: Boolean = false, // true si el usuario ya tiene plaza asignada -- se salta negocio/region/plaza
     val negocios: List<NegocioDto> = emptyList(),
@@ -226,12 +227,20 @@ class EncuestaViewModel(
         estado = estado.copy(comentario = valor)
     }
 
+    fun onFolioChange(valor: String) {
+        estado = estado.copy(folio = valor.take(50))
+    }
+
     val faltanPorCalificar: Int get() = estado.preguntas.count { estado.calificaciones[it.id] == null }
 
     fun enviar(context: Context, onListo: () -> Unit) {
         val tiendaId = estado.tiendaId
         val cuestionarioId = estado.cuestionarioId
         if (tiendaId == null || cuestionarioId == null) return
+        if (estado.folio.isBlank()) {
+            estado = estado.copy(error = "Escribe el número de folio antes de continuar.")
+            return
+        }
         if (faltanPorCalificar > 0) {
             estado = estado.copy(error = "Falta calificar ${faltanPorCalificar} pregunta(s).")
             return
@@ -243,6 +252,7 @@ class EncuestaViewModel(
                 usuarioId = sesion.usuarioId,
                 tiendaId = tiendaId,
                 cuestionarioId = cuestionarioId,
+                folio = estado.folio.trim(),
                 comentario = estado.comentario,
                 calificaciones = estado.calificaciones,
             )
@@ -265,6 +275,7 @@ class EncuestaViewModel(
 
     fun reiniciarParaNuevaEncuesta() {
         estado = estado.copy(
+            folio = "",
             tiendaId = null,
             tiendaSeleccionada = null,
             atisDisponibles = emptyList(),

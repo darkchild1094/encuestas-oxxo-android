@@ -12,6 +12,7 @@ import mx.com.getic.encuestasoxxo.ui.preguntas.PreguntasViewModel
 import mx.com.getic.encuestasoxxo.ui.usuarios.UsuariosViewModel
 import mx.com.getic.encuestasoxxo.ui.tiendas.TiendasViewModel
 import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
+import mx.com.getic.encuestasoxxo.ui.estadisticas.EstadisticasViewModel
 
 /**
  * Factory para crear ViewModels con dependencias personalizadas.
@@ -52,6 +53,10 @@ class AppViewModelFactory(
             PerfilViewModel::class.java -> {
                 requireNotNull(sesion)
                 PerfilViewModel(container.usuarioRepository, container.sessionManager, sesion) as T
+            }
+            EstadisticasViewModel::class.java -> {
+                requireNotNull(sesion)
+                EstadisticasViewModel(container.estadisticasRepository, sesion) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

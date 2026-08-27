@@ -24,6 +24,7 @@ data class SubirEncuestasRequest(
 
 data class EncuestaSyncDto(
     val id: String, // uuid
+    val folio: String,
     val tienda_id: Int,
     val cuestionario_id: Int,
     val comentario: String?,

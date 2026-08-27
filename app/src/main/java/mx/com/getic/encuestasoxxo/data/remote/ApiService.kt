@@ -45,6 +45,12 @@ interface ApiService {
     @GET("respuestas")
     suspend fun respuestas(@Header("Authorization") token: String): List<RespuestaFilaDto>
 
+    @GET("notificaciones/encuestas")
+    suspend fun encuestasNuevas(
+        @Header("Authorization") token: String,
+        @Query("desde") desde: String
+    ): EncuestasNuevasResponse
+
     // --- Gestión de Usuarios (Admin) ---
     @GET("usuarios")
     suspend fun obtenerUsuarios(@Header("Authorization") token: String): List<UsuarioDto>
@@ -115,4 +121,29 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Int
     )
+
+    // --- Estadísticas (ATI) ---
+    @GET("estadisticas/pfs")
+    suspend fun estadisticasPfs(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
+
+    @GET("estadisticas/region/atis")
+    suspend fun estadisticasRegionAtis(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
+
+    @GET("estadisticas/region/plazas")
+    suspend fun estadisticasRegionPlazas(
+        @Header("Authorization") token: String,
+        @Query("plaza_id") plazaId: Int,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
 }

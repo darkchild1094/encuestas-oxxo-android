@@ -20,6 +20,7 @@ data class LoginUiState(
     val password: String = "",
     val cargando: Boolean = false,
     val error: String? = null,
+    val mostrarCuentasRecordadas: Boolean = true,
     // Cuando no es null, la pantalla muestra "modo cuenta elegida":
     // solo pide la contraseña de esta cuenta (no hay que volver a
     // teclear el correo).
@@ -58,6 +59,7 @@ class LoginViewModel(
             correo = usuario.correo,
             password = "",
             error = null,
+            mostrarCuentasRecordadas = false,
             cuentaSeleccionada = usuario,
         )
     }
@@ -65,7 +67,13 @@ class LoginViewModel(
     // "No soy yo" / "Usar otra cuenta": vuelve a mostrar el campo de
     // correo en blanco para teclear una cuenta distinta.
     fun usarOtraCuenta() {
-        estado = estado.copy(correo = "", password = "", error = null, cuentaSeleccionada = null)
+        estado = estado.copy(
+            correo = "",
+            password = "",
+            error = null,
+            mostrarCuentasRecordadas = false,
+            cuentaSeleccionada = null,
+        )
     }
 
     fun olvidarCuenta(usuario: UsuarioRecordado) {

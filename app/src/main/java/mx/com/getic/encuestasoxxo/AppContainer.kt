@@ -3,10 +3,12 @@ package mx.com.getic.encuestasoxxo
 import android.content.Context
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.UsuariosRecordadosStore
+import mx.com.getic.encuestasoxxo.data.NotificacionesStore
 import mx.com.getic.encuestasoxxo.data.local.AppDatabase
 import mx.com.getic.encuestasoxxo.data.remote.RetrofitClient
 import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
+import mx.com.getic.encuestasoxxo.data.repository.EstadisticasRepository
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
 
 // Service Locator simple: un solo lugar donde se arman las
@@ -16,6 +18,7 @@ class AppContainer(context: Context) {
     val database: AppDatabase = AppDatabase.obtener(context)
     val sessionManager: SessionManager = SessionManager(context)
     val usuariosRecordadosStore: UsuariosRecordadosStore = UsuariosRecordadosStore(context)
+    val notificacionesStore: NotificacionesStore = NotificacionesStore(context)
     val api = RetrofitClient.api
 
     val authRepository: AuthRepository by lazy {
@@ -23,7 +26,11 @@ class AppContainer(context: Context) {
     }
 
     val encuestaRepository: EncuestaRepository by lazy {
-        EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), database.tiendaDao(), sessionManager)
+        EncuestaRepository(api, database.cuestionarioDao(), database.encuestaDao(), database.tiendaDao(), database.atiDao(), sessionManager)
+    }
+
+    val estadisticasRepository: EstadisticasRepository by lazy {
+        EstadisticasRepository(api, sessionManager)
     }
 
     val usuarioRepository: UsuarioRepository by lazy {
