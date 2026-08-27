@@ -46,7 +46,7 @@ public final class EncuestaDao_Impl implements EncuestaDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR ABORT INTO `encuesta` (`id`,`usuarioId`,`tiendaId`,`cuestionarioId`,`comentario`,`fechaCreacionLocal`,`sincronizado`) VALUES (?,?,?,?,?,?,?)";
+        return "INSERT OR ABORT INTO `encuesta` (`id`,`usuarioId`,`tiendaId`,`cuestionarioId`,`folio`,`comentario`,`fechaCreacionLocal`,`sincronizado`) VALUES (?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -56,14 +56,15 @@ public final class EncuestaDao_Impl implements EncuestaDao {
         statement.bindLong(2, entity.getUsuarioId());
         statement.bindLong(3, entity.getTiendaId());
         statement.bindLong(4, entity.getCuestionarioId());
+        statement.bindString(5, entity.getFolio());
         if (entity.getComentario() == null) {
-          statement.bindNull(5);
+          statement.bindNull(6);
         } else {
-          statement.bindString(5, entity.getComentario());
+          statement.bindString(6, entity.getComentario());
         }
-        statement.bindString(6, entity.getFechaCreacionLocal());
+        statement.bindString(7, entity.getFechaCreacionLocal());
         final int _tmp = entity.getSincronizado() ? 1 : 0;
-        statement.bindLong(7, _tmp);
+        statement.bindLong(8, _tmp);
       }
     };
     this.__insertionAdapterOfRespuestaDetalleEntity = new EntityInsertionAdapter<RespuestaDetalleEntity>(__db) {
@@ -172,6 +173,7 @@ public final class EncuestaDao_Impl implements EncuestaDao {
           final int _cursorIndexOfUsuarioId = CursorUtil.getColumnIndexOrThrow(_cursor, "usuarioId");
           final int _cursorIndexOfTiendaId = CursorUtil.getColumnIndexOrThrow(_cursor, "tiendaId");
           final int _cursorIndexOfCuestionarioId = CursorUtil.getColumnIndexOrThrow(_cursor, "cuestionarioId");
+          final int _cursorIndexOfFolio = CursorUtil.getColumnIndexOrThrow(_cursor, "folio");
           final int _cursorIndexOfComentario = CursorUtil.getColumnIndexOrThrow(_cursor, "comentario");
           final int _cursorIndexOfFechaCreacionLocal = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaCreacionLocal");
           final int _cursorIndexOfSincronizado = CursorUtil.getColumnIndexOrThrow(_cursor, "sincronizado");
@@ -186,6 +188,8 @@ public final class EncuestaDao_Impl implements EncuestaDao {
             _tmpTiendaId = _cursor.getInt(_cursorIndexOfTiendaId);
             final int _tmpCuestionarioId;
             _tmpCuestionarioId = _cursor.getInt(_cursorIndexOfCuestionarioId);
+            final String _tmpFolio;
+            _tmpFolio = _cursor.getString(_cursorIndexOfFolio);
             final String _tmpComentario;
             if (_cursor.isNull(_cursorIndexOfComentario)) {
               _tmpComentario = null;
@@ -198,7 +202,7 @@ public final class EncuestaDao_Impl implements EncuestaDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfSincronizado);
             _tmpSincronizado = _tmp != 0;
-            _item = new EncuestaEntity(_tmpId,_tmpUsuarioId,_tmpTiendaId,_tmpCuestionarioId,_tmpComentario,_tmpFechaCreacionLocal,_tmpSincronizado);
+            _item = new EncuestaEntity(_tmpId,_tmpUsuarioId,_tmpTiendaId,_tmpCuestionarioId,_tmpFolio,_tmpComentario,_tmpFechaCreacionLocal,_tmpSincronizado);
             _result.add(_item);
           }
           return _result;
@@ -297,6 +301,7 @@ public final class EncuestaDao_Impl implements EncuestaDao {
           final int _cursorIndexOfUsuarioId = CursorUtil.getColumnIndexOrThrow(_cursor, "usuarioId");
           final int _cursorIndexOfTiendaId = CursorUtil.getColumnIndexOrThrow(_cursor, "tiendaId");
           final int _cursorIndexOfCuestionarioId = CursorUtil.getColumnIndexOrThrow(_cursor, "cuestionarioId");
+          final int _cursorIndexOfFolio = CursorUtil.getColumnIndexOrThrow(_cursor, "folio");
           final int _cursorIndexOfComentario = CursorUtil.getColumnIndexOrThrow(_cursor, "comentario");
           final int _cursorIndexOfFechaCreacionLocal = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaCreacionLocal");
           final int _cursorIndexOfSincronizado = CursorUtil.getColumnIndexOrThrow(_cursor, "sincronizado");
@@ -311,6 +316,8 @@ public final class EncuestaDao_Impl implements EncuestaDao {
             _tmpTiendaId = _cursor.getInt(_cursorIndexOfTiendaId);
             final int _tmpCuestionarioId;
             _tmpCuestionarioId = _cursor.getInt(_cursorIndexOfCuestionarioId);
+            final String _tmpFolio;
+            _tmpFolio = _cursor.getString(_cursorIndexOfFolio);
             final String _tmpComentario;
             if (_cursor.isNull(_cursorIndexOfComentario)) {
               _tmpComentario = null;
@@ -323,7 +330,7 @@ public final class EncuestaDao_Impl implements EncuestaDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfSincronizado);
             _tmpSincronizado = _tmp != 0;
-            _item = new EncuestaEntity(_tmpId,_tmpUsuarioId,_tmpTiendaId,_tmpCuestionarioId,_tmpComentario,_tmpFechaCreacionLocal,_tmpSincronizado);
+            _item = new EncuestaEntity(_tmpId,_tmpUsuarioId,_tmpTiendaId,_tmpCuestionarioId,_tmpFolio,_tmpComentario,_tmpFechaCreacionLocal,_tmpSincronizado);
             _result.add(_item);
           }
           return _result;

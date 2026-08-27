@@ -62,19 +62,19 @@ fun LoginScreen(
                 )
             )
             .padding(24.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 40.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo_pulso_ti),
                 contentDescription = "Pulso TI",
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .padding(bottom = 32.dp)
+                    .fillMaxWidth(0.65f)
+                    .padding(bottom = 8.dp)
             )
 
             Text(
@@ -83,7 +83,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.outline
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             Card(
                 shape = MaterialTheme.shapes.large,

@@ -1,9 +1,10 @@
 R_DEF: Internal format may change without notice
 local
 drawable ic_launcher_background
-drawable ic_launcher_foreground
-drawable ic_launcher_legacy
+drawable logo_oxxo
+drawable logo_pulso_ti
 mipmap ic_launcher
+mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 string app_name
 style Theme.EncuestasOxxo
