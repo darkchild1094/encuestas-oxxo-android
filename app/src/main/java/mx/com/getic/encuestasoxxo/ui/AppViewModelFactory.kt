@@ -15,6 +15,8 @@ import mx.com.getic.encuestasoxxo.ui.perfil.PerfilViewModel
 import mx.com.getic.encuestasoxxo.ui.dashboard.DashboardViewModel
 import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
 import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteViewModel
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteDetalleViewModel
 
 /**
  * Factory para crear ViewModels con dependencias personalizadas.
@@ -23,6 +25,7 @@ import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
 class AppViewModelFactory(
     private val container: AppContainer,
     private val sesion: Sesion? = null,
+    private val extraId: Int? = null,
 ) : ViewModelProvider.Factory {
     
     @Suppress("UNCHECKED_CAST")
@@ -59,6 +62,15 @@ class AppViewModelFactory(
             DashboardViewModel::class.java -> {
                 requireNotNull(sesion)
                 DashboardViewModel(container.dashboardRepository, sesion) as T
+            }
+            SoporteViewModel::class.java -> {
+                requireNotNull(sesion)
+                SoporteViewModel(container.soporteRepository, sesion) as T
+            }
+            SoporteDetalleViewModel::class.java -> {
+                requireNotNull(sesion)
+                requireNotNull(extraId)
+                SoporteDetalleViewModel(container.soporteRepository, sesion, extraId) as T
             }
             PFSModuloViewModel::class.java -> {
                 requireNotNull(sesion)

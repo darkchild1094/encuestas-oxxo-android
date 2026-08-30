@@ -10,6 +10,7 @@ import mx.com.getic.encuestasoxxo.data.repository.AuthRepository
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 import mx.com.getic.encuestasoxxo.data.repository.DashboardRepository
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
+import mx.com.getic.encuestasoxxo.data.repository.SoporteRepository
 import mx.com.getic.encuestasoxxo.data.repository.CatalogoRepository
 import mx.com.getic.encuestasoxxo.domain.EncuestaSyncManager
 import mx.com.getic.encuestasoxxo.domain.GeneralSyncManager
@@ -35,6 +36,10 @@ class AppContainer(context: Context) {
 
     val dashboardRepository: DashboardRepository by lazy {
         DashboardRepository(api, sessionManager)
+    }
+
+    val soporteRepository: SoporteRepository by lazy {
+        SoporteRepository(api, sessionManager)
     }
 
     val usuarioRepository: UsuarioRepository by lazy {

@@ -176,4 +176,61 @@ interface ApiService : ApiServiceSync {
         @Query("desde") desde: String? = null,
         @Query("hasta") hasta: String? = null
     ): List<PromedioPreguntaDto>
+
+    // --- Soporte / Reportar Bug ---
+    @GET("soporte/mis-tickets")
+    suspend fun misTickets(@Header("Authorization") token: String): List<TicketSoporteDto>
+
+    @GET("soporte/admin/lista")
+    suspend fun adminTickets(@Header("Authorization") token: String): List<TicketSoporteDto>
+
+    @GET("soporte/detalle")
+    suspend fun detalleTicket(
+        @Header("Authorization") token: String,
+        @Query("id") id: Int
+    ): DetalleTicketResponse
+
+    @Multipart
+    @POST("soporte/crear")
+    suspend fun crearTicket(
+        @Header("Authorization") token: String,
+        @Part("asunto") asunto: RequestBody,
+        @Part("descripcion") descripcion: RequestBody,
+        @Part evidencia: MultipartBody.Part?
+    ): OperacionUsuarioResponse
+
+    @Multipart
+    @POST("soporte/comentar")
+    suspend fun comentarTicket(
+        @Header("Authorization") token: String,
+        @Part("ticket_id") ticketId: RequestBody,
+        @Part("mensaje") mensaje: RequestBody,
+        @Part evidencia: MultipartBody.Part?
+    ): OperacionUsuarioResponse
+
+    @FormUrlEncoded
+    @POST("soporte/resolver")
+    suspend fun resolverTicket(
+        @Header("Authorization") token: String,
+        @Field("ticket_id") ticketId: Int,
+        @Field("notas_cierre") notas: String
+    ): OperacionUsuarioResponse
+
+    @GET("notificaciones")
+    suspend fun obtenerNotificaciones(
+        @Header("Authorization") token: String,
+        @Query("desde") desde: String
+    ): NotificacionesResponse
 }
+
+data class NotificacionesResponse(
+    val notificaciones: List<NotificacionDto>,
+    val server_time: String
+)
+
+data class NotificacionDto(
+    val tipo: String,
+    val titulo: String,
+    val mensaje: String,
+    val data: Map<String, String>? = null
+)

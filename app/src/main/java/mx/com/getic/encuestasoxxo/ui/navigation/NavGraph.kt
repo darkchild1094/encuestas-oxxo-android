@@ -53,6 +53,10 @@ import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloScreen
 import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
 import mx.com.getic.encuestasoxxo.ui.sync.SyncScreen
 import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteScreen
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteViewModel
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteDetalleScreen
+import mx.com.getic.encuestasoxxo.ui.soporte.SoporteDetalleViewModel
 
 object Rutas {
     const val LOGIN = "login"
@@ -67,6 +71,8 @@ object Rutas {
     const val PERFIL = "perfil"
     const val PFS = "pfs"
     const val SYNC = "sync"
+    const val SOPORTE = "soporte"
+    const val SOPORTE_DETALLE = "soporte_detalle/{id}"
 }
 
 @Composable
@@ -80,15 +86,16 @@ fun NavGraph(container: AppContainer) {
     // arranque -- evita un parpadeo al Login si ya habia sesion guardada.
     LaunchedEffect(sesionState) {
         if (!revisado) revisado = true
-        if (sesionState?.rol == "ATI" &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            (context as? Activity)?.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
-        }
-        if (sesionState?.rol == "ATI") {
+        if (sesionState != null) {
+            // Solicitar permiso de notificaciones para todos en Android 13+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                (context as? Activity)?.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+            // Agendar notificaciones para todos los roles
             NotificacionesWorker.agendar(context)
-        } else if (sesionState == null) {
+        } else {
             NotificacionesWorker.cancelar(context)
         }
     }
@@ -295,6 +302,37 @@ fun NavGraph(container: AppContainer) {
                 )
             }
         }
+
+        composable(Rutas.SOPORTE) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(SoporteViewModel::class.java) }
+                    SoporteScreen(
+                        viewModel = viewModel,
+                        sesion = sesion,
+                        onAbrirMenu = abrirMenu,
+                        onVerDetalle = { id -> navController.navigate("soporte_detalle/$id") }
+                    )
+                }
+            }
+        }
+
+        composable(Rutas.SOPORTE_DETALLE) { backStackEntry ->
+            val sesion = sesionState
+            val ticketId = backStackEntry.arguments?.getString("id")?.toIntOrNull()
+            if (sesion != null && ticketId != null) {
+                val factory = AppViewModelFactory(container, sesion, extraId = ticketId)
+                val viewModel = viewModel { factory.create(SoporteDetalleViewModel::class.java) }
+                SoporteDetalleScreen(
+                    viewModel = viewModel,
+                    sesion = sesion,
+                    apiBaseUrl = BuildConfig.API_BASE_URL,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
 }
 
@@ -380,6 +418,13 @@ private fun ConDrawer(
                     selected = false,
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                     onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.PERFIL) },
+                )
+
+                NavigationDrawerItem(
+                    label = { Text(if (sesion.rol == "WEBMASTER") "Atención a Soporte" else "Reportar Problema") },
+                    selected = false,
+                    icon = { Icon(Icons.Filled.BugReport, contentDescription = null) },
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.SOPORTE) },
                 )
 
                 NavigationDrawerItem(
