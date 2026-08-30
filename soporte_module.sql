@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `soporte_ticket` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `usuario_id` INT NOT NULL,
+    `usuario_id` INT(10) UNSIGNED NOT NULL,
     `asunto` VARCHAR(255) NOT NULL,
     `descripcion` TEXT NOT NULL,
     `estatus` ENUM('ABIERTO', 'EN_PROCESO', 'RESUELTO', 'CERRADO') DEFAULT 'ABIERTO',
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `soporte_ticket` (
 CREATE TABLE IF NOT EXISTS `soporte_mensaje` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `ticket_id` INT NOT NULL,
-    `usuario_id` INT NOT NULL,
+    `usuario_id` INT(10) UNSIGNED NOT NULL,
     `mensaje` TEXT NOT NULL,
     `evidencia_ruta` VARCHAR(255) NULL,
     `fecha` DATETIME DEFAULT CURRENT_TIMESTAMP,
