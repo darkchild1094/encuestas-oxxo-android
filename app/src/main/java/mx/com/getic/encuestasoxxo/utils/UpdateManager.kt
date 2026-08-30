@@ -22,7 +22,7 @@ class UpdateManager(private val context: Context, private val api: ApiService) {
         private const val TAG = "UpdateManager"
     }
 
-    suspend fun checarYDescargar(onUpdateAvailable: (versionName: String, url: String, obligatoria: Boolean) -> Unit) {
+    suspend fun checarYDescargar(onUpdateAvailable: (versionName: String, url: String, obligatoria: Boolean, novedades: String) -> Unit) {
         try {
             val response = api.verificarActualizacion()
             val currentVersion = BuildConfig.VERSION_CODE
@@ -30,7 +30,7 @@ class UpdateManager(private val context: Context, private val api: ApiService) {
             Log.d(TAG, "Versión actual: $currentVersion, Versión servidor: ${response.version_code}")
             
             if (response.version_code > currentVersion) {
-                onUpdateAvailable(response.version_name, response.url, response.obligatoria)
+                onUpdateAvailable(response.version_name, response.url, response.obligatoria, response.novedades ?: "")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error verificando actualización: ${e.message}")

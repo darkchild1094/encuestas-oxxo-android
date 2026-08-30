@@ -12,6 +12,7 @@ import mx.com.getic.encuestasoxxo.BuildConfig
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.data.repository.UsuarioRepository
+import mx.com.getic.encuestasoxxo.ui.sync.ActualizacionDisponible
 import mx.com.getic.encuestasoxxo.utils.UpdateManager
 import timber.log.Timber
 
@@ -24,7 +25,7 @@ data class PerfilUiState(
     val exito: Boolean = false,
     val error: String? = null,
     val buscandoActualizacion: Boolean = false,
-    val actualizacionDisponible: Triple<String, String, Boolean>? = null,
+    val actualizacionDisponible: ActualizacionDisponible? = null,
     val sinActualizaciones: Boolean = false
 )
 
@@ -50,11 +51,11 @@ class PerfilViewModel(
         viewModelScope.launch {
             try {
                 var encontrada = false
-                updateManager.checarYDescargar { versionName, url, obligatoria ->
+                updateManager.checarYDescargar { versionName, url, obligatoria, novedades ->
                     encontrada = true
                     estado = estado.copy(
                         buscandoActualizacion = false,
-                        actualizacionDisponible = Triple(versionName, url, obligatoria)
+                        actualizacionDisponible = ActualizacionDisponible(versionName, url, obligatoria, novedades)
                     )
                 }
                 if (!encontrada) {
@@ -71,9 +72,7 @@ class PerfilViewModel(
     }
 
     fun descargarActualizacion() {
-        estado.actualizacionDisponible?.let { (_, url, _) ->
-            updateManager.descargarEInstalar(url)
-        }
+        estado.actualizacionDisponible?.let { updateManager.descargarEInstalar(it.url) }
     }
 
     fun cerrarDialogoActualizacion() {

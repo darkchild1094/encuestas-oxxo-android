@@ -13,6 +13,13 @@ import mx.com.getic.encuestasoxxo.data.SessionManager
 import mx.com.getic.encuestasoxxo.domain.GeneralSyncManager
 import mx.com.getic.encuestasoxxo.utils.UpdateManager
 
+data class ActualizacionDisponible(
+    val versionName: String,
+    val url: String,
+    val obligatoria: Boolean,
+    val novedades: String,
+)
+
 class SyncViewModel(
     private val syncManager: GeneralSyncManager,
     private val sessionManager: SessionManager,
@@ -26,7 +33,7 @@ class SyncViewModel(
     var terminado by mutableStateOf(false)
         private set
         
-    var updateAvailable by mutableStateOf<Triple<String, String, Boolean>?>(null)
+    var updateAvailable by mutableStateOf<ActualizacionDisponible?>(null)
         private set
 
     init {
@@ -39,8 +46,8 @@ class SyncViewModel(
                 coroutineScope {
                     // Lanzamos búsqueda de actualización en paralelo con la sincronización
                     val updateJob = async {
-                        updateManager.checarYDescargar { versionName, url, obligatoria ->
-                            updateAvailable = Triple(versionName, url, obligatoria)
+                        updateManager.checarYDescargar { versionName, url, obligatoria, novedades ->
+                            updateAvailable = ActualizacionDisponible(versionName, url, obligatoria, novedades)
                         }
                     }
 
@@ -53,7 +60,7 @@ class SyncViewModel(
                     updateJob.await()
                     
                     // Si hay actualización obligatoria, nos detenemos aquí
-                    if (updateAvailable?.third == true) {
+                    if (updateAvailable?.obligatoria == true) {
                         estado = "Actualización obligatoria disponible"
                         return@coroutineScope
                     }
@@ -69,9 +76,7 @@ class SyncViewModel(
     }
     
     fun descargarActualizacion() {
-        updateAvailable?.let { (_, url, _) ->
-            updateManager.descargarEInstalar(url)
-        }
+        updateAvailable?.let { updateManager.descargarEInstalar(it.url) }
     }
     
     fun ignorarActualizacion() {

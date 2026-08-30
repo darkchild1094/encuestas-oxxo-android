@@ -229,19 +229,52 @@ fun PerfilScreen(
     }
 
     // Diálogo de actualización disponible (búsqueda manual)
-    estado.actualizacionDisponible?.let { (versionName, _, obligatoria) ->
+    val contextoUpdate = LocalContext.current
+    estado.actualizacionDisponible?.let { info ->
         AlertDialog(
-            onDismissRequest = { if (!obligatoria) viewModel.cerrarDialogoActualizacion() },
+            onDismissRequest = { if (!info.obligatoria) viewModel.cerrarDialogoActualizacion() },
             title = { Text("Actualización disponible") },
             text = {
-                Text("Hay una nueva versión disponible ($versionName). ${if (obligatoria) "Es necesario actualizar para continuar usando la app." else "¿Deseas actualizarla ahora?"}")
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Hay una nueva versión disponible (${info.versionName}). " +
+                            if (info.obligatoria) "Es necesario actualizar para continuar usando la app." else "¿Deseas actualizarla ahora?"
+                    )
+                    if (info.novedades.isNotBlank()) {
+                        HorizontalDivider()
+                        Text("Novedades de esta versión:", fontWeight = FontWeight.Medium)
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 220.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Text(info.novedades, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    if (info.url.isNotBlank()) {
+                        HorizontalDivider()
+                        Text(
+                            "¿No se descarga sola? Toca aquí para bajarla manualmente desde el navegador:",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            text = "Descargar APK manualmente",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            modifier = Modifier.clickable {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(info.url))
+                                contextoUpdate.startActivity(intent)
+                            }
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(onClick = { viewModel.descargarActualizacion() }) {
                     Text("Actualizar")
                 }
             },
-            dismissButton = if (!obligatoria) {
+            dismissButton = if (!info.obligatoria) {
                 {
                     TextButton(onClick = { viewModel.cerrarDialogoActualizacion() }) {
                         Text("Más tarde")
