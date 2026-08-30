@@ -29,4 +29,13 @@ interface EncuestaDao {
     // el detalle filtrado/exportable vive en el panel web).
     @Query("SELECT * FROM encuesta ORDER BY fechaCreacionLocal DESC")
     suspend fun todas(): List<EncuestaEntity>
+
+    @Query("SELECT * FROM encuesta WHERE tiendaId = :tiendaId ORDER BY fechaCreacionLocal DESC LIMIT 1")
+    suspend fun ultimaEncuestaDeTienda(tiendaId: Int): EncuestaEntity?
+
+    @Delete
+    suspend fun borrarEncuesta(encuesta: EncuestaEntity)
+
+    @Query("DELETE FROM respuesta_detalle WHERE encuestaId = :encuestaId")
+    suspend fun borrarRespuestasDe(encuestaId: String)
 }

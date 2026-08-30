@@ -155,7 +155,26 @@ fun HistorialScreen(viewModel: HistorialViewModel, onAbrirMenu: () -> Unit) {
                         items(encuestasTienda.sortedByDescending { it.fecha }, key = { it.encuestaId }) { enc ->
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(enc.fecha, style = MaterialTheme.typography.titleMedium)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(enc.fecha, style = MaterialTheme.typography.titleMedium)
+                                            enc.folio?.let {
+                                                if (it.isNotBlank()) {
+                                                    Text("Folio: $it", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        }
+                                        Text(
+                                            text = enc.usuarioPfs ?: "S/U",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                    
                                     Text("${enc.tiendaCodigo} - ${enc.tienda}", style = MaterialTheme.typography.bodyMedium)
 
                                     enc.calificaciones.forEach { (pregunta, cal) ->

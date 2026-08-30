@@ -53,46 +53,6 @@ import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloScreen
 import mx.com.getic.encuestasoxxo.ui.pfs.PFSModuloViewModel
 import mx.com.getic.encuestasoxxo.ui.sync.SyncScreen
 import mx.com.getic.encuestasoxxo.ui.sync.SyncViewModel
-import mx.com.getic.encuestasoxxo.utils.excel.ExcelGenerator
-
-import android.content.Intent
-import android.net.Uri
-import mx.com.getic.encuestasoxxo.ui.dashboard.TipoDashboard
-
-private suspend fun exportarReporteCompleto(
-    context: android.content.Context,
-    dashboardVm: DashboardViewModel,
-    historialVm: HistorialViewModel,
-    dashboardRepo: mx.com.getic.encuestasoxxo.data.repository.DashboardRepository,
-    plazaId: Int?
-) {
-    if (plazaId == null) return
-    
-    // Obtenemos todos los datos para las hojas
-    val respuestas = historialVm.estado.respuestasRaw
-    val statsAtis = dashboardRepo.obtenerEstadisticasPlazaAtis(plazaId, null, null)
-    val statsTiendas = dashboardRepo.obtenerEstadisticasPlazaTiendas(plazaId, null, null)
-    val statsPfs = dashboardRepo.obtenerEstadisticasPfsIndividual(plazaId, null, null)
-
-    val uri = ExcelGenerator.generarReporteCompleto(
-        context,
-        respuestas,
-        statsAtis,
-        statsTiendas,
-        statsPfs
-    )
-
-    if (uri != null) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(intent, "Compartir Reporte Integral"))
-    } else {
-        Toast.makeText(context, "Error al generar el archivo", Toast.LENGTH_SHORT).show()
-    }
-}
 
 object Rutas {
     const val LOGIN = "login"
@@ -436,30 +396,6 @@ private fun ConDrawer(
                         icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.DASHBOARD) },
                     )
-                    NavigationDrawerItem(
-                        label = { Text("Exportar Reporte Excel") },
-                        selected = false,
-                        icon = { Icon(Icons.Filled.FileDownload, contentDescription = null) },
-                        onClick = { 
-                            scope.launch { 
-                                drawerState.close()
-                                // Aquí llamaremos a una función global de exportación
-                                Toast.makeText(context, "Generando reporte completo...", Toast.LENGTH_LONG).show()
-                                val factory = AppViewModelFactory(container, sesion)
-                                val dashboardVm = factory.create(DashboardViewModel::class.java)
-                                val historialVm = factory.create(HistorialViewModel::class.java)
-                                
-                                // Lanzamos la exportación masiva
-                                exportarReporteCompleto(
-                                    context, 
-                                    dashboardVm, 
-                                    historialVm, 
-                                    container.dashboardRepository, 
-                                    sesion.plazaId
-                                )
-                            }
-                        },
-                    )
                     if (sesion.veResultadosTiendas) {
                         NavigationDrawerItem(
                             label = { Text("Respuestas de tiendas") },
@@ -503,6 +439,14 @@ private fun ConDrawer(
                 }
 
                 Spacer(Modifier.weight(1f))
+                
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    modifier = Modifier.padding(16.dp).align(androidx.compose.ui.Alignment.CenterHorizontally),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                )
+
                 HorizontalDivider()
                 NavigationDrawerItem(
                     label = { Text("Cerrar sesion") },

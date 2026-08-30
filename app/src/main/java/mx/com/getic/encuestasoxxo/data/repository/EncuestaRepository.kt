@@ -17,6 +17,14 @@ import mx.com.getic.encuestasoxxo.data.remote.dto.*
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
+
+sealed class GuardadoEncuestaResult {
+    data class Exito(val id: String) : GuardadoEncuestaResult()
+    object YaRealizadaReciente : GuardadoEncuestaResult()
+    object FolioDuplicado : GuardadoEncuestaResult()
+    data class Error(val mensaje: String) : GuardadoEncuestaResult()
+}
 
 /**
  * Resultado de obtenerPreguntas que incluye flag indicando si los datos vienen del cache
@@ -210,8 +218,46 @@ class EncuestaRepository(
         folio: String,
         comentario: String?,
         calificaciones: Map<Int, Int>, // preguntaId -> 1..10
-    ) {
+    ): GuardadoEncuestaResult {
         val formato = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val fechaActual = Date()
+
+        // --- 1. Verificar duplicados recientes (30 min) en esta tienda ---
+        val ultima = encuestaDao.ultimaEncuestaDeTienda(tiendaId)
+        if (ultima != null) {
+            try {
+                val fechaUltima = formato.parse(ultima.fechaCreacionLocal)
+                if (fechaUltima != null) {
+                    val diffMillis = fechaActual.time - fechaUltima.time
+                    val minutos = TimeUnit.MILLISECONDS.toMinutes(diffMillis)
+
+                    if (minutos < 30) {
+                        val folioActual = folio.trim().uppercase()
+                        val folioUltimo = ultima.folio.trim().uppercase()
+
+                        // a. Si los folios son idénticos, es un duplicado total
+                        if (folioActual == folioUltimo && folioActual.isNotEmpty()) {
+                            return GuardadoEncuestaResult.FolioDuplicado
+                        }
+
+                        // b. "Borra la que no" (dar prioridad al que SI tiene folio)
+                        if (folioUltimo.isEmpty() && folioActual.isNotEmpty()) {
+                            Timber.d("Borrando encuesta previa sin folio para dar prioridad a la nueva: ${ultima.id}")
+                            encuestaDao.borrarRespuestasDe(ultima.id)
+                            encuestaDao.borrarEncuesta(ultima)
+                            // Continuamos al guardado de la nueva
+                        } else {
+                            // Si la anterior ya tiene folio, o ambas no tienen, bloqueamos por tiempo
+                            return GuardadoEncuestaResult.YaRealizadaReciente
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error al validar duplicado reciente")
+            }
+        }
+
+        // --- 2. Proceder con el guardado normal ---
         val encuestaId = UUID.randomUUID().toString()
 
         val encuesta = EncuestaEntity(
@@ -219,9 +265,9 @@ class EncuestaRepository(
             usuarioId = usuarioId,
             tiendaId = tiendaId,
             cuestionarioId = cuestionarioId,
-            folio = folio,
+            folio = folio.uppercase().trim(),
             comentario = comentario?.ifBlank { null },
-            fechaCreacionLocal = formato.format(Date()),
+            fechaCreacionLocal = formato.format(fechaActual),
             sincronizado = false,
         )
         encuestaDao.guardarEncuesta(encuesta)
@@ -242,6 +288,7 @@ class EncuestaRepository(
         // WorkManager. Si falla (sin señal), no pasa nada: se queda
         // marcada sincronizado=false y el Worker la reintenta despues.
         intentarSincronizarPendientes()
+        return GuardadoEncuestaResult.Exito(encuestaId)
     }
 
     suspend fun intentarSincronizarPendientes(): Boolean {

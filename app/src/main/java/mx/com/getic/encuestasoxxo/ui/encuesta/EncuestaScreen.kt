@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
@@ -34,7 +35,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import coil.compose.AsyncImage
+import mx.com.getic.encuestasoxxo.BuildConfig
 import mx.com.getic.encuestasoxxo.R
 import mx.com.getic.encuestasoxxo.data.Sesion
 import mx.com.getic.encuestasoxxo.data.remote.dto.AtiDto
@@ -94,6 +98,7 @@ fun EncuestaScreen(
                 PantallaAgradecimiento(
                     tiendaNombre = estado.tiendaSeleccionada?.nombre.orEmpty(),
                     folio = estado.folio,
+                    ultimoId = estado.ultimoIdGenerado,
                     onReiniciar = { viewModel.reiniciarParaNuevaEncuesta() },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -121,6 +126,10 @@ fun EncuestaScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.medium,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Characters,
+                                autoCorrect = false
+                            )
                         )
                     }
 
@@ -677,6 +686,7 @@ private fun DesplegableSimple(
 fun PantallaAgradecimiento(
     tiendaNombre: String,
     folio: String,
+    ultimoId: String,
     onReiniciar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -733,6 +743,27 @@ fun PantallaAgradecimiento(
                 shape = MaterialTheme.shapes.medium
             ) {
                 Text("Cerrar")
+            }
+
+            Spacer(Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    fontSize = 9.sp
+                )
+                Text(
+                    text = "ID: ${ultimoId.take(8)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    fontSize = 8.sp
+                )
             }
         }
     }

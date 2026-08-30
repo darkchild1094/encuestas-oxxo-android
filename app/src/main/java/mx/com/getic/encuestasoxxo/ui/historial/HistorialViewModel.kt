@@ -14,8 +14,10 @@ import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
 data class EncuestaResumen(
     val encuestaId: String,
     val fecha: String,
+    val folio: String?,
     val tienda: String,
     val tiendaCodigo: String,
+    val usuarioPfs: String?, // Email o nombre del PFS
     val atiId: Int?,
     val atiNombre: String?,
     val comentario: String?,
@@ -28,7 +30,6 @@ data class HistorialUiState(
     val atis: List<AtiDto> = emptyList(),
     val atiSeleccionadoId: Int? = null,
     val error: String? = null,
-    val respuestasRaw: List<RespuestaFilaDto> = emptyList(),
 )
 
 class HistorialViewModel(
@@ -62,7 +63,6 @@ class HistorialViewModel(
                     encuestas = agrupar(filas),
                     atis = atis,
                     atiSeleccionadoId = atis.firstOrNull()?.id,
-                    respuestasRaw = filas,
                 )
             } catch (e: Exception) {
                 estado = estado.copy(cargando = false, error = "No se pudieron cargar las respuestas. Revisa tu conexion.")
@@ -80,8 +80,10 @@ class HistorialViewModel(
             EncuestaResumen(
                 encuestaId = id,
                 fecha = primera.fecha_creacion_local,
+                folio = primera.folio,
                 tienda = primera.tienda,
                 tiendaCodigo = primera.tienda_codigo,
+                usuarioPfs = primera.usuario,
                 atiId = primera.ati_id,
                 atiNombre = primera.ati_nombre,
                 comentario = primera.comentario,

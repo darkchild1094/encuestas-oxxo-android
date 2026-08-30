@@ -15,6 +15,7 @@ import mx.com.getic.encuestasoxxo.data.remote.dto.PlazaDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.RegionDto
 import mx.com.getic.encuestasoxxo.data.remote.dto.TiendaDto
 import mx.com.getic.encuestasoxxo.data.repository.EncuestaRepository
+import mx.com.getic.encuestasoxxo.data.repository.GuardadoEncuestaResult
 import mx.com.getic.encuestasoxxo.sync.SincronizacionWorker
 
 data class EncuestaUiState(
@@ -40,6 +41,7 @@ data class EncuestaUiState(
     val cargandoPreguntas: Boolean = false,
     val enviando: Boolean = false,
     val enviadoOk: Boolean = false,
+    val ultimoIdGenerado: String = "",
     val datosEnCache: Boolean = false,
     val encuestasPendientes: Int = 0,
     val error: String? = null,
@@ -235,7 +237,7 @@ class EncuestaViewModel(
     }
 
     fun onFolioChange(valor: String) {
-        estado = estado.copy(folio = valor.take(11))
+        estado = estado.copy(folio = valor.uppercase().take(11))
     }
 
     val faltanPorCalificar: Int get() = estado.preguntas.count { estado.calificaciones[it.id] == null }
@@ -255,7 +257,7 @@ class EncuestaViewModel(
 
         estado = estado.copy(enviando = true, error = null)
         viewModelScope.launch {
-            repository.guardarYIntentarSincronizar(
+            val result = repository.guardarYIntentarSincronizar(
                 usuarioId = sesion.usuarioId,
                 tiendaId = tiendaId,
                 cuestionarioId = cuestionarioId,
@@ -263,9 +265,23 @@ class EncuestaViewModel(
                 comentario = estado.comentario,
                 calificaciones = estado.calificaciones,
             )
-            SincronizacionWorker.agendar(context) // por si el intento inmediato no tuvo señal
-            estado = estado.copy(enviando = false, enviadoOk = true)
-            onListo()
+
+            when (result) {
+                is GuardadoEncuestaResult.Exito -> {
+                    SincronizacionWorker.agendar(context) // por si el intento inmediato no tuvo señal
+                    estado = estado.copy(enviando = false, enviadoOk = true, ultimoIdGenerado = result.id)
+                    onListo()
+                }
+                GuardadoEncuestaResult.FolioDuplicado -> {
+                    estado = estado.copy(enviando = false, error = "Este número de folio ya fue registrado para esta tienda hoy.")
+                }
+                GuardadoEncuestaResult.YaRealizadaReciente -> {
+                    estado = estado.copy(enviando = false, error = "Ya se realizó una encuesta en esta tienda hace menos de 30 minutos.")
+                }
+                is GuardadoEncuestaResult.Error -> {
+                    estado = estado.copy(enviando = false, error = result.mensaje)
+                }
+            }
         }
     }
 
