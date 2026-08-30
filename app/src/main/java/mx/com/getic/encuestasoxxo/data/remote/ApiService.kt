@@ -9,6 +9,12 @@ interface ApiService : ApiServiceSync {
     @POST("login")
     suspend fun login(@Body body: LoginRequest): LoginResponse
 
+    // Se llama al abrir la app (con sesion guardada) para confirmar que
+    // el token todavia sirve, antes de que el usuario se tope con fallas
+    // raras a medias (ej. encuestas que nunca logran subir).
+    @GET("auth/validar")
+    suspend fun validarSesion(@Header("Authorization") token: String): ValidarSesionResponse
+
     @GET("negocios")
     suspend fun negocios(@Header("Authorization") token: String): List<NegocioDto>
 

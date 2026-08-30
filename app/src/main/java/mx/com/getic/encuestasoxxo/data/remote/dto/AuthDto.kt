@@ -11,6 +11,10 @@ data class LoginResponse(
     val usuario: UsuarioDto
 )
 
+data class ValidarSesionResponse(
+    val valido: Boolean
+)
+
 data class UsuarioDto(
     val id: Int,
     val correo: String,

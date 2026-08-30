@@ -49,4 +49,31 @@ class AuthRepository(
     }
 
     suspend fun logout() = sesion.cerrarSesion()
+
+    // Se llama al abrir la app si ya hay sesion guardada. Regresa true
+    // si el token sigue sirviendo; si el servidor dice 401 (token
+    // vencido, borrado, o la cuenta ya no existe), cierra la sesion
+    // local de una vez para que NavGraph mande a Login -- en vez de que
+    // el usuario se entere hasta que algo falle a medias (ej. encuestas
+    // que nunca logran subir en silencio).
+    //
+    // Si es un problema de RED (sin internet), NO cierra sesion --
+    // seguimos confiando en el token guardado, la app debe poder seguir
+    // trabajando offline con lo que ya tenia.
+    suspend fun validarSesionSiHayInternet(token: String): Boolean {
+        return try {
+            api.validarSesion("Bearer $token").valido
+        } catch (e: retrofit2.HttpException) {
+            if (e.code() == 401) {
+                sesion.cerrarSesion()
+                false
+            } else {
+                true // error del servidor (500, etc.) -- no es motivo para cerrar sesion
+            }
+        } catch (e: java.io.IOException) {
+            true // sin conexion: no se pudo validar, pero tampoco hay motivo para desconfiar
+        } catch (e: Exception) {
+            true
+        }
+    }
 }

@@ -140,6 +140,17 @@ fun NavGraph(container: AppContainer) {
         return
     }
 
+    // Validacion de sesion EN SEGUNDO PLANO, sin bloquear el arranque
+    // (el timeout de red es de 30s -- bloquear aqui congelaria la app
+    // ese tiempo si el servidor esta lento/caido). Si el token ya no
+    // sirve, validarSesionSiHayInternet() cierra la sesion local por su
+    // cuenta; como sesionState es un Flow, NavGraph se entera solo y
+    // recompone hacia Login. Corre una sola vez por sesion activa
+    // (queda "atado" al token: si cambia -por logout/login- se re-evalua).
+    LaunchedEffect(sesionState?.token) {
+        sesionState?.let { container.authRepository.validarSesionSiHayInternet(it.token) }
+    }
+
     val inicio = when {
         sesionState == null -> Rutas.LOGIN
         !sesionState!!.syncRealizado -> Rutas.SYNC
