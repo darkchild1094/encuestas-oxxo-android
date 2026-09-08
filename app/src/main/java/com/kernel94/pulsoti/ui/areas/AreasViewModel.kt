@@ -12,14 +12,15 @@ import timber.log.Timber
 
 data class AreasUiState(
     val cargando: Boolean = true,
+    val guardando: Boolean = false,
     val areas: List<AdministracionDto> = emptyList(),
     val error: String? = null,
+    val operacionExitosa: Boolean = false,
 )
 
-// Catalogo de areas administrativas: solo lectura (se dan de alta desde
-// el panel web, modulo Administracion -- solo webmaster). Aqui el ATI
-// nada mas consulta que areas existen y comparte el enlace publico de
-// la encuesta de oficina.
+// Catalogo de areas administrativas (encuesta de oficina). El ATI puede
+// consultarlas y darlas de alta desde aqui; editar/desactivar/eliminar
+// sigue siendo solo desde el panel web (modulo Administracion, webmaster).
 class AreasViewModel(
     private val repository: EncuestaRepository,
 ) : ViewModel() {
@@ -44,5 +45,36 @@ class AreasViewModel(
                 )
             }
         }
+    }
+
+    fun agregarArea(nombre: String) {
+        val limpio = nombre.trim()
+        if (limpio.isEmpty()) {
+            estado = estado.copy(error = "Escribe un nombre para el area.")
+            return
+        }
+        estado = estado.copy(guardando = true, error = null)
+        viewModelScope.launch {
+            try {
+                repository.crearAdministracion(limpio)
+                estado = estado.copy(guardando = false, operacionExitosa = true)
+                cargar()
+            } catch (e: retrofit2.HttpException) {
+                Timber.e(e, "Error al crear area (HTTP ${e.code()})")
+                val mensaje = if (e.code() == 409) {
+                    "Ya existe un area con ese nombre."
+                } else {
+                    "No se pudo crear el area."
+                }
+                estado = estado.copy(guardando = false, error = mensaje)
+            } catch (e: Exception) {
+                Timber.e(e, "Error al crear area")
+                estado = estado.copy(guardando = false, error = "No se pudo crear el area. Revisa tu conexion.")
+            }
+        }
+    }
+
+    fun resetOperacionExitosa() {
+        estado = estado.copy(operacionExitosa = false)
     }
 }

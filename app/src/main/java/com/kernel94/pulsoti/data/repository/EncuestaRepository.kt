@@ -52,8 +52,12 @@ class EncuestaRepository(
     suspend fun plazas(regionId: Int): List<PlazaDto> = api.plazas(token(), regionId)
 
     // Areas administrativas de oficina (RH, Mantenimiento, Asesores...):
-    // catalogo global de solo lectura, se dan de alta desde el panel web.
+    // catalogo global. El ATI puede darlas de alta desde la app; editar/
+    // desactivar/eliminar sigue siendo solo desde el panel web.
     suspend fun administraciones(): List<AdministracionDto> = api.administraciones(token())
+
+    suspend fun crearAdministracion(nombre: String): AdministracionDto =
+        api.crearAdministracion(token(), CrearAdministracionRequest(nombre))
 
     // --- Tiendas de una plaza: se refrescan de red y se cachean en
     // Room (son pocas, ya vienen acotadas a la plaza del usuario), para

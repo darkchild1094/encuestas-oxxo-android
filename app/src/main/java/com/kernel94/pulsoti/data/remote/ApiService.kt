@@ -68,6 +68,12 @@ interface ApiService : ApiServiceSync {
     @GET("administraciones")
     suspend fun administraciones(@Header("Authorization") token: String): List<AdministracionDto>
 
+    @POST("administraciones")
+    suspend fun crearAdministracion(
+        @Header("Authorization") token: String,
+        @Body body: CrearAdministracionRequest
+    ): AdministracionDto
+
     @Multipart
     @POST("usuarios")
     suspend fun crearUsuario(

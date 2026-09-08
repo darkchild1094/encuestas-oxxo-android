@@ -32,6 +32,9 @@ data class AsignarAtiRequest(
 )
 
 // Catalogo global de areas administrativas de oficina (RH, Mantenimiento,
-// Asesores...) -- destino de la encuesta de oficina. Solo lectura desde la
-// app; se dan de alta desde el panel web (webmaster).
+// Asesores...) -- destino de la encuesta de oficina. El ATI puede darlas
+// de alta desde la app (POST /api/administraciones); editar/desactivar/
+// eliminar sigue siendo solo desde el panel web (webmaster).
 data class AdministracionDto(val id: Int, val nombre: String)
+
+data class CrearAdministracionRequest(val nombre: String)
