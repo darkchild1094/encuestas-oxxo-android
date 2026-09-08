@@ -10,6 +10,7 @@ import com.kernel94.pulsoti.ui.login.ChangePasswordViewModel
 import com.kernel94.pulsoti.ui.login.LoginViewModel
 import com.kernel94.pulsoti.ui.preguntas.PreguntasViewModel
 import com.kernel94.pulsoti.ui.areas.AreasViewModel
+import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaViewModel
 import com.kernel94.pulsoti.ui.usuarios.UsuariosViewModel
 import com.kernel94.pulsoti.ui.tiendas.TiendasViewModel
 import com.kernel94.pulsoti.ui.perfil.PerfilViewModel
@@ -51,6 +52,10 @@ class AppViewModelFactory(
             }
             AreasViewModel::class.java -> {
                 AreasViewModel(container.encuestaRepository) as T
+            }
+            EncuestaOficinaViewModel::class.java -> {
+                requireNotNull(sesion)
+                EncuestaOficinaViewModel(container.encuestaRepository, sesion) as T
             }
             UsuariosViewModel::class.java -> {
                 UsuariosViewModel(container.usuarioRepository, container.encuestaRepository) as T

@@ -42,6 +42,8 @@ import com.kernel94.pulsoti.ui.preguntas.PreguntasScreen
 import com.kernel94.pulsoti.ui.preguntas.PreguntasViewModel
 import com.kernel94.pulsoti.ui.areas.AreasScreen
 import com.kernel94.pulsoti.ui.areas.AreasViewModel
+import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaScreen
+import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaViewModel
 import com.kernel94.pulsoti.ui.tiendas.TiendasScreen
 import com.kernel94.pulsoti.ui.tiendas.TiendasViewModel
 import com.kernel94.pulsoti.ui.dashboard.DashboardScreen
@@ -68,6 +70,7 @@ object Rutas {
     const val USUARIOS = "usuarios"
     const val PREGUNTAS = "preguntas"
     const val AREAS = "areas"
+    const val ENCUESTA_OFICINA = "encuesta_oficina"
     const val TIENDAS = "tiendas"
     const val DASHBOARD = "dashboard"
     const val RESPUESTAS = "respuestas"
@@ -247,6 +250,21 @@ fun NavGraph(container: AppContainer) {
                     AreasScreen(
                         viewModel = viewModel,
                         apiBaseUrl = BuildConfig.API_BASE_URL,
+                        onAbrirMenu = abrirMenu,
+                    )
+                }
+            }
+        }
+
+        composable(Rutas.ENCUESTA_OFICINA) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(EncuestaOficinaViewModel::class.java) }
+                    EncuestaOficinaScreen(
+                        viewModel = viewModel,
+                        sesion = sesion,
                         onAbrirMenu = abrirMenu,
                     )
                 }
@@ -488,6 +506,14 @@ private fun ConDrawer(
                         selected = false,
                         icon = { Icon(Icons.Filled.Star, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ENCUESTA) },
+                    )
+                }
+                if (sesion.contestaOficina) {
+                    NavigationDrawerItem(
+                        label = { Text("Responder encuesta de oficina") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.Assignment, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ENCUESTA_OFICINA) },
                     )
                 }
                 if (sesion.gestionaPreguntas) {

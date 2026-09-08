@@ -39,7 +39,8 @@ interface ApiService : ApiServiceSync {
     @GET("cuestionario")
     suspend fun obtenerCuestionario(
         @Header("Authorization") token: String,
-        @Query("plaza_id") plazaId: Int
+        @Query("plaza_id") plazaId: Int? = null,
+        @Query("ambito") ambito: String? = null,
     ): CuestionarioResponse
 
     @POST("encuestas")

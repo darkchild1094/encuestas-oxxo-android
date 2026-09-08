@@ -35,6 +35,14 @@ data class PreguntasResult(
     val esCacheado: Boolean = false,
 )
 
+// Resultado del cuestionario de oficina: a diferencia de PreguntasResult
+// no se cachea en Room (ver obtenerPreguntasOficina), asi que va con el
+// DTO plano en vez de la entidad local.
+data class PreguntasOficinaResult(
+    val cuestionarioId: Int,
+    val preguntas: List<PreguntaDto>,
+)
+
 class EncuestaRepository(
     private val api: ApiService,
     private val cuestionarioDao: CuestionarioDao,
@@ -347,6 +355,58 @@ class EncuestaRepository(
     // Historial para el ATI -- ya viene filtrado por el servidor a
     // solo las tiendas donde el es el asesor TI asignado.
     suspend fun obtenerRespuestas(): List<RespuestaFilaDto> = api.respuestas(token())
+
+    // --- Encuesta de oficina (ATI contesta sobre un area administrativa,
+    // no una tienda). A diferencia del flujo de tienda, va SIEMPRE en
+    // linea: sin cache Room ni cola offline -- el volumen es bajo y el
+    // ATI normalmente la contesta con señal (oficina/WiFi). ---
+    suspend fun obtenerPreguntasOficina(): PreguntasOficinaResult? {
+        return try {
+            val respuesta = api.obtenerCuestionario(token(), ambito = "oficina")
+            val cuestionario = respuesta.cuestionario ?: return null
+            PreguntasOficinaResult(cuestionario.id, respuesta.preguntas)
+        } catch (e: Exception) {
+            Timber.w(e, "Error obteniendo preguntas de oficina")
+            null
+        }
+    }
+
+    suspend fun enviarEncuestaOficina(
+        administracionId: Int,
+        cuestionarioId: Int,
+        folio: String,
+        comentario: String?,
+        calificaciones: Map<Int, Int>, // preguntaId -> 0..10
+    ): GuardadoEncuestaResult {
+        val formato = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        val encuestaId = UUID.randomUUID().toString()
+
+        val dto = EncuestaSyncDto(
+            id = encuestaId,
+            folio = folio,
+            tienda_id = null,
+            administracion_id = administracionId,
+            cuestionario_id = cuestionarioId,
+            comentario = comentario?.ifBlank { null },
+            fecha_creacion_local = formato.format(Date()),
+            respuestas = calificaciones.map { (preguntaId, calificacion) ->
+                RespuestaSyncDto(UUID.randomUUID().toString(), preguntaId, calificacion)
+            },
+        )
+
+        return try {
+            val respuesta = api.subirEncuestas(token(), SubirEncuestasRequest(listOf(dto)))
+            if (respuesta.sincronizadas.contains(encuestaId)) {
+                GuardadoEncuestaResult.Exito(encuestaId)
+            } else {
+                val motivo = respuesta.fallidas.firstOrNull { it.id == encuestaId }?.error
+                GuardadoEncuestaResult.Error(motivo ?: "El servidor no acepto la encuesta.")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error enviando encuesta de oficina")
+            GuardadoEncuestaResult.Error("Sin conexion. Verifica tu internet e intenta de nuevo.")
+        }
+    }
 
     // --- Gestion de Preguntas (ATI / Webmaster) ---
     suspend fun crearPregunta(cuestionarioId: Int, texto: String, orden: Int) {

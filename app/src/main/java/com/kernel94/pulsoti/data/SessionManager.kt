@@ -29,6 +29,7 @@ class SessionManager(private val context: Context) {
         val GESTIONA_USUARIOS = booleanPreferencesKey("gestiona_usuarios")
         val ES_ENCUESTABLE = booleanPreferencesKey("es_encuestable")
         val VE_RESULTADOS = booleanPreferencesKey("ve_resultados_tiendas")
+        val CONTESTA_OFICINA = booleanPreferencesKey("contesta_oficina")
         val DEBE_CAMBIAR_PASS = booleanPreferencesKey("debe_cambiar_password")
         val PLAZA_ID = intPreferencesKey("plaza_id")
         val PLAZA_NOMBRE = stringPreferencesKey("plaza_nombre")
@@ -48,6 +49,7 @@ class SessionManager(private val context: Context) {
             prefs[Claves.GESTIONA_USUARIOS] = usuario.gestiona_usuarios
             prefs[Claves.ES_ENCUESTABLE] = usuario.es_encuestable
             prefs[Claves.VE_RESULTADOS] = usuario.ve_resultados_tiendas
+            prefs[Claves.CONTESTA_OFICINA] = usuario.contesta_oficina
             prefs[Claves.DEBE_CAMBIAR_PASS] = usuario.debe_cambiar_password ?: false
             if (usuario.plaza_id != null) {
                 prefs[Claves.PLAZA_ID] = usuario.plaza_id
@@ -83,6 +85,7 @@ class SessionManager(private val context: Context) {
             gestionaUsuarios = prefs[Claves.GESTIONA_USUARIOS] ?: false,
             esEncuestable = prefs[Claves.ES_ENCUESTABLE] ?: false,
             veResultadosTiendas = prefs[Claves.VE_RESULTADOS] ?: false,
+            contestaOficina = prefs[Claves.CONTESTA_OFICINA] ?: false,
             debeCambiarPassword = prefs[Claves.DEBE_CAMBIAR_PASS] ?: false,
             genero = prefs[Claves.GENERO] ?: "M",
             plazaId = prefs[Claves.PLAZA_ID],
@@ -106,6 +109,7 @@ data class Sesion(
     val gestionaUsuarios: Boolean,
     val esEncuestable: Boolean,
     val veResultadosTiendas: Boolean,
+    val contestaOficina: Boolean = false,
     val debeCambiarPassword: Boolean,
     val plazaId: Int? = null,
     val plazaNombre: String? = null,
