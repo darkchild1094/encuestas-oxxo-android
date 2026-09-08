@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "mx.com.getic.encuestasoxxo",
+  "applicationId": "com.kernel94.pulsoti",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 10,
-      "versionName": "1.10.0",
+      "versionCode": 11,
+      "versionName": "1.10.1",
       "outputFile": "app-release.apk"
     }
   ],

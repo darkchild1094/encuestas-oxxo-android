@@ -1,0 +1,138 @@
+package com.kernel94.pulsoti.ui.perfil
+
+import android.content.Context
+import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import com.kernel94.pulsoti.BuildConfig
+import com.kernel94.pulsoti.data.Sesion
+import com.kernel94.pulsoti.data.SessionManager
+import com.kernel94.pulsoti.data.repository.UsuarioRepository
+import com.kernel94.pulsoti.ui.sync.ActualizacionDisponible
+import com.kernel94.pulsoti.utils.UpdateManager
+import timber.log.Timber
+
+data class PerfilUiState(
+    val nombre: String = "",
+    val fotoUri: Uri? = null,
+    val password: String = "",
+    val confirmPassword: String = "",
+    val cargando: Boolean = false,
+    val exito: Boolean = false,
+    val error: String? = null,
+    val buscandoActualizacion: Boolean = false,
+    val actualizacionDisponible: ActualizacionDisponible? = null,
+    val sinActualizaciones: Boolean = false
+)
+
+class PerfilViewModel(
+    private val repository: UsuarioRepository,
+    private val sessionManager: SessionManager,
+    private val updateManager: UpdateManager,
+    private val sesion: Sesion
+) : ViewModel() {
+
+    var estado by mutableStateOf(PerfilUiState(nombre = sesion.nombreCompleto))
+        private set
+
+    val versionActual: String = BuildConfig.VERSION_NAME
+
+    fun onNombreChange(v: String) { estado = estado.copy(nombre = v) }
+    fun onFotoSelected(uri: Uri?) { estado = estado.copy(fotoUri = uri) }
+    fun onPasswordChange(v: String) { estado = estado.copy(password = v) }
+    fun onConfirmChange(v: String) { estado = estado.copy(confirmPassword = v) }
+
+    fun buscarActualizaciones() {
+        estado = estado.copy(buscandoActualizacion = true, sinActualizaciones = false)
+        viewModelScope.launch {
+            try {
+                var encontrada = false
+                updateManager.checarYDescargar { versionName, url, obligatoria, novedades ->
+                    encontrada = true
+                    estado = estado.copy(
+                        buscandoActualizacion = false,
+                        actualizacionDisponible = ActualizacionDisponible(versionName, url, obligatoria, novedades)
+                    )
+                }
+                if (!encontrada) {
+                    estado = estado.copy(buscandoActualizacion = false, sinActualizaciones = true)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error buscando actualizaciones")
+                estado = estado.copy(
+                    buscandoActualizacion = false,
+                    error = "No se pudo verificar actualizaciones: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun descargarActualizacion() {
+        estado.actualizacionDisponible?.let { updateManager.descargarEInstalar(it.url) }
+    }
+
+    fun cerrarDialogoActualizacion() {
+        estado = estado.copy(actualizacionDisponible = null)
+    }
+
+    fun limpiarSinActualizaciones() {
+        estado = estado.copy(sinActualizaciones = false)
+    }
+
+    fun guardar(context: Context) {
+        if (estado.password.isNotEmpty() && estado.password != estado.confirmPassword) {
+            estado = estado.copy(error = "Las contraseñas no coinciden")
+            return
+        }
+
+        estado = estado.copy(cargando = true, error = null, exito = false)
+        viewModelScope.launch {
+            try {
+                // 1. Foto y Nombre
+                val fotoFile = estado.fotoUri?.let { uri ->
+                    repository.uriToFile(context.contentResolver, uri, context.cacheDir)
+                }
+                
+                val resPerfil = repository.actualizarPerfil(estado.nombre, fotoFile)
+                
+                // 2. Password si se llenó
+                if (estado.password.isNotBlank()) {
+                    repository.cambiarPassword(estado.password)
+                }
+
+                // Actualizar sesión local (DataStore) con los nuevos datos
+                val sesionActual = sessionManager.sesionActualBloqueante()
+                if (sesionActual != null) {
+                    // Nota: el DTO de UsuarioDto requiere todos los campos, pero solo actualizamos lo que cambió
+                    // Una forma más limpia sería tener un método 'actualizarSesion' parcial en SessionManager
+                    // Pero usaremos lo que hay.
+                    sessionManager.guardarSesion(
+                        token = sesionActual.token,
+                        usuario = com.kernel94.pulsoti.data.remote.dto.UsuarioDto(
+                            id = sesionActual.usuarioId,
+                            correo = sesionActual.correo,
+                            nombre_completo = estado.nombre,
+                            foto_perfil = resPerfil.foto_perfil ?: sesionActual.fotoPerfil,
+                            rol = sesionActual.rol,
+                            gestiona_preguntas = sesionActual.gestionaPreguntas,
+                            gestiona_usuarios = sesionActual.gestionaUsuarios,
+                            es_encuestable = sesionActual.esEncuestable,
+                            ve_resultados_tiendas = sesionActual.veResultadosTiendas,
+                            plaza_id = sesionActual.plazaId,
+                            plaza_nombre = sesionActual.plazaNombre
+                        )
+                    )
+                }
+
+                estado = estado.copy(cargando = false, exito = true, password = "", confirmPassword = "", fotoUri = null)
+            } catch (e: Exception) {
+                Timber.e(e, "Error al actualizar perfil")
+                estado = estado.copy(cargando = false, error = "Error al actualizar: ${e.message}")
+            }
+        }
+    }
+}

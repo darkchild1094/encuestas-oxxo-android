@@ -1,4 +1,4 @@
-mx.com.getic.encuestasoxxo
+com.kernel94.pulsoti
 attr action
 attr alpha
 attr argType
@@ -312,5 +312,7 @@ styleable NavInclude graph
 styleable Navigator android_label android_id route
 styleable StateListDrawable android_dither android_visible android_variablePadding android_constantSize android_enterFadeDuration android_exitFadeDuration
 styleable StateListDrawableItem android_drawable
+xml backup_rules
+xml data_extraction_rules
 xml file_paths
 xml network_security_config

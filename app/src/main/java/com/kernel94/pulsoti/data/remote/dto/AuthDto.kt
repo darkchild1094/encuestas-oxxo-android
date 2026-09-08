@@ -1,0 +1,36 @@
+package com.kernel94.pulsoti.data.remote.dto
+
+// Coincide 1 a 1 con lo que regresa POST /api/login en encuestas_web
+data class LoginRequest(
+    val correo: String,
+    val password: String
+)
+
+data class LoginResponse(
+    val token: String,
+    val usuario: UsuarioDto
+)
+
+data class ValidarSesionResponse(
+    val valido: Boolean
+)
+
+data class UsuarioDto(
+    val id: Int,
+    val correo: String,
+    val nombre_completo: String?,
+    val foto_perfil: String?,
+    val genero: String? = "M", // "H" o "M"
+    val plaza_id: Int?,
+    val plaza_nombre: String?,
+    val rol: String, // "ATI" | "WEBMASTER" | "PFS"
+    val gestiona_preguntas: Boolean,
+    val gestiona_usuarios: Boolean,
+    val es_encuestable: Boolean,
+    val ve_resultados_tiendas: Boolean,
+    val debe_cambiar_password: Boolean? = false
+)
+
+data class ErrorResponse(
+    val error: String
+)

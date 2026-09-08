@@ -17,3 +17,10 @@ local.properties
 
 # Ignore generated build files
 **/build/
+
+# Firma de release -- NUNCA versionar la llave ni sus contraseñas
+keystore.properties
+app/keystore.properties
+*.jks
+*.keystore
+

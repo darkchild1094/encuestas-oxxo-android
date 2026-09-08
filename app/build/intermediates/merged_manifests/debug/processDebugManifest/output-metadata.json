@@ -4,15 +4,15 @@
     "type": "MERGED_MANIFESTS",
     "kind": "Directory"
   },
-  "applicationId": "mx.com.getic.encuestasoxxo",
+  "applicationId": "com.kernel94.pulsoti",
   "variantName": "debug",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 9,
-      "versionName": "1.9.0",
+      "versionCode": 11,
+      "versionName": "1.10.1",
       "outputFile": "AndroidManifest.xml"
     }
   ],

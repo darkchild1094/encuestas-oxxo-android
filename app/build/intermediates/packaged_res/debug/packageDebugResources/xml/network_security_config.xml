@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
+    <!-- Produccion: solo HTTPS. Antes tenia cleartextTrafficPermitted="true"
+         (lo marca el pre-launch report de Play y cualquier escaner). El
+         dominio ya sirve TLS, no hace falta. -->
+    <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">fieldserviceplus.alwaysdata.net</domain>
+    </domain-config>
+
+    <!-- Solo para desarrollo local contra XAMPP via emulador. -->
+    <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "mx.com.getic.encuestasoxxo.app-mergeDebugResources-59:/values-lo/values-lo.xml",
+            "outputFile": "com.kernel94.pulsoti.app-mergeDebugResources-59:/values-lo/values-lo.xml",
             "map": [
                 {
                     "source": "C:\\Users\\darkchild1094\\.gradle\\caches\\9.3.0\\transforms\\3d076ec8881c6aadad5aef6e27673b36\\workspace\\transformed\\core-1.13.1\\res\\values-lo\\values-lo.xml",

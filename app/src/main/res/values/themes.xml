@@ -1,3 +1,5 @@
 <resources>
+    <!-- edge-to-edge se maneja en codigo: enableEdgeToEdge() en MainActivity
+         y consumo de insets por pantalla (Scaffold / safeDrawingPadding). -->
     <style name="Theme.EncuestasOxxo" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

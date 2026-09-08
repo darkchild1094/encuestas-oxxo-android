@@ -1,20 +1,20 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:30:9-38:20
+INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:32:9-40:20
 	android:grantUriPermissions
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:34:13-47
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:36:13-47
 	android:authorities
 		INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:32:13-64
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:34:13-64
 	android:exported
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:33:13-37
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:35:13-37
 	android:name
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:31:13-62
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:33:13-62
 manifest
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-40:12
-INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-40:12
-INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-40:12
-INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-40:12
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-42:12
+INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-42:12
+INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-42:12
+INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:2:1-42:12
 MERGED from [androidx.work:work-runtime-ktx:2.9.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\227fdc805c36cd74706d30a12be9cfc2\workspace\transformed\work-runtime-ktx-2.9.1\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.work:work-runtime:2.9.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\dce5eca149e9d519c511753d9344e3f9\workspace\transformed\work-runtime-2.9.1\AndroidManifest.xml:17:1-145:12
 MERGED from [androidx.navigation:navigation-common:2.7.7] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\15d92c7c28ab49c4a0aca19f43806cec\workspace\transformed\navigation-common-2.7.7\AndroidManifest.xml:17:1-22:12
@@ -119,8 +119,8 @@ ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\sr
 	android:name
 		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:9:22-85
 application
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:11:5-39:19
-INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:11:5-39:19
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:11:5-41:19
+INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:11:5-41:19
 MERGED from [androidx.work:work-runtime:2.9.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\dce5eca149e9d519c511753d9344e3f9\workspace\transformed\work-runtime-2.9.1\AndroidManifest.xml:28:5-143:19
 MERGED from [androidx.work:work-runtime:2.9.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\dce5eca149e9d519c511753d9344e3f9\workspace\transformed\work-runtime-2.9.1\AndroidManifest.xml:28:5-143:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3b3f43c212b0f738f08290c4b0cb3c02\workspace\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
@@ -144,43 +144,47 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\darkchild1094\.gra
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:14:9-41
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:16:9-41
+	android:fullBackupContent
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:14:9-54
 	android:roundIcon
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:16:9-54
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:18:9-54
 	android:icon
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:15:9-43
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:17:9-43
 	android:allowBackup
 		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:13:9-35
 	android:theme
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:17:9-51
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:19:9-51
 	android:networkSecurityConfig
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:18:9-69
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:20:9-69
+	android:dataExtractionRules
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:15:9-65
 	android:name
 		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:12:9-41
-activity#mx.com.getic.encuestasoxxo.MainActivity
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:20:9-28:20
+activity#com.kernel94.pulsoti.MainActivity
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:22:9-30:20
 	android:exported
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:22:13-36
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:24:13-36
 	android:theme
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:23:13-55
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:25:13-55
 	android:name
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:21:13-41
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:23:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:24:13-27:29
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:26:13-29:29
 action#android.intent.action.MAIN
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:25:17-69
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:27:17-69
 	android:name
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:25:25-66
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:27:25-66
 category#android.intent.category.LAUNCHER
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:26:17-77
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:28:17-77
 	android:name
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:26:27-74
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:28:27-74
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:35:13-37:54
+ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:37:13-39:54
 	android:resource
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:37:17-51
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:39:17-51
 	android:name
-		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:36:17-67
+		ADDED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml:38:17-67
 uses-sdk
 INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\darkchild1094\AndroidStudioProjects\encuestas_android\app\src\main\AndroidManifest.xml
@@ -583,7 +587,7 @@ ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
-permission#mx.com.getic.encuestasoxxo.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.kernel94.pulsoti.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
@@ -593,7 +597,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
-uses-permission#mx.com.getic.encuestasoxxo.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.kernel94.pulsoti.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\darkchild1094\.gradle\caches\9.3.0\transforms\3d076ec8881c6aadad5aef6e27673b36\workspace\transformed\core-1.13.1\AndroidManifest.xml:26:22-94

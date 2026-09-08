@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Antes exponia rutas amplisimas y solapadas (todo external-path,
+    external-files-path, cache y files con path="."). Se acota a lo que
+    de verdad se comparte por FileProvider:
+
+    - updates: el APK de auto-actualizacion, en
+      getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) -> .../files/Download
+      (UpdateManager -> Intent ACTION_VIEW del instalador).
+
+    Las subidas de foto/evidencia usan context.cacheDir + ContentResolver
+    directo (OkHttp multipart), no pasan por FileProvider, por eso no
+    necesitan entrada aqui.
+-->
 <paths>
-    <external-path name="external_files" path="." />
-    <external-files-path name="external_app_files" path="." />
-    <cache-path name="cache_files" path="." />
-    <files-path name="files" path="." />
+    <external-files-path name="updates" path="Download/" />
 </paths>
