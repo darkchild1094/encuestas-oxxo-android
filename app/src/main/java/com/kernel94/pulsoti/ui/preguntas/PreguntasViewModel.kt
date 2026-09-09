@@ -6,14 +6,19 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import com.kernel94.pulsoti.data.local.entities.PreguntaEntity
 import com.kernel94.pulsoti.data.remote.dto.NegocioDto
 import com.kernel94.pulsoti.data.remote.dto.PlazaDto
 import com.kernel94.pulsoti.data.remote.dto.RegionDto
 import com.kernel94.pulsoti.data.repository.EncuestaRepository
 import timber.log.Timber
 
+// Representacion unica para renderizar la lista sin importar de donde
+// vino: PreguntaEntity (tienda, cacheada en Room) o PreguntaDto
+// (oficina, siempre en linea) traen los mismos 3 campos.
+data class PreguntaUi(val id: Int, val texto: String, val orden: Int)
+
 data class PreguntasUiState(
+    val ambito: String = "tiendas", // "tiendas" | "oficina"
     val cargandoCatalogo: Boolean = true,
     val plazaFija: Boolean = false,
     val negocios: List<NegocioDto> = emptyList(),
@@ -23,7 +28,7 @@ data class PreguntasUiState(
     val regionId: Int? = null,
     val plazaId: Int? = null,
     val cuestionarioId: Int? = null,
-    val preguntas: List<PreguntaEntity> = emptyList(),
+    val preguntas: List<PreguntaUi> = emptyList(),
     val cargandoPreguntas: Boolean = false,
     val error: String? = null,
     val operacionExitosa: Boolean = false
@@ -43,6 +48,16 @@ class PreguntasViewModel(
             cargarPreguntas(plazaAsignada)
         } else {
             cargarNegocios()
+        }
+    }
+
+    fun cambiarAmbito(nuevo: String) {
+        if (nuevo == estado.ambito) return
+        estado = estado.copy(ambito = nuevo, preguntas = emptyList(), cuestionarioId = null, error = null)
+        if (nuevo == "oficina") {
+            cargarPreguntasOficina()
+        } else {
+            estado.plazaId?.let { cargarPreguntas(it) }
         }
     }
 
@@ -108,7 +123,7 @@ class PreguntasViewModel(
                 if (resultado != null) {
                     estado = estado.copy(
                         cuestionarioId = resultado.cuestionario.id,
-                        preguntas = resultado.preguntas,
+                        preguntas = resultado.preguntas.map { PreguntaUi(it.id, it.texto, it.orden) },
                         cargandoPreguntas = false
                     )
                 } else {
@@ -120,19 +135,46 @@ class PreguntasViewModel(
         }
     }
 
+    private fun cargarPreguntasOficina() {
+        estado = estado.copy(cargandoPreguntas = true, error = null)
+        viewModelScope.launch {
+            val resultado = repository.obtenerPreguntasOficina()
+            if (resultado != null) {
+                estado = estado.copy(
+                    cuestionarioId = resultado.cuestionarioId,
+                    preguntas = resultado.preguntas.map { PreguntaUi(it.id, it.texto, it.orden) },
+                    cargandoPreguntas = false
+                )
+            } else {
+                estado = estado.copy(cargandoPreguntas = false, error = "No se pudo cargar la encuesta de oficina.")
+            }
+        }
+    }
+
     fun refrescar() {
-        val plazaId = estado.plazaId ?: return
-        cargarPreguntas(plazaId, refrescar = true)
+        if (estado.ambito == "oficina") {
+            cargarPreguntasOficina()
+        } else {
+            val plazaId = estado.plazaId ?: return
+            cargarPreguntas(plazaId, refrescar = true)
+        }
+    }
+
+    private fun recargarListaActual() {
+        if (estado.ambito == "oficina") {
+            cargarPreguntasOficina()
+        } else {
+            estado.plazaId?.let { cargarPreguntas(it) }
+        }
     }
 
     fun agregarPregunta(texto: String, orden: Int) {
         val cuestionarioId = estado.cuestionarioId ?: return
-        val plazaId = estado.plazaId ?: return
         viewModelScope.launch {
             try {
                 repository.crearPregunta(cuestionarioId, texto, orden)
                 estado = estado.copy(operacionExitosa = true)
-                cargarPreguntas(plazaId)
+                recargarListaActual()
             } catch (e: Exception) {
                 Timber.e(e, "Error al agregar pregunta")
                 estado = estado.copy(error = "Error al agregar pregunta.")
@@ -141,12 +183,11 @@ class PreguntasViewModel(
     }
 
     fun editarPregunta(id: Int, texto: String, orden: Int) {
-        val plazaId = estado.plazaId ?: return
         viewModelScope.launch {
             try {
                 repository.editarPregunta(id, texto, orden)
                 estado = estado.copy(operacionExitosa = true)
-                cargarPreguntas(plazaId)
+                recargarListaActual()
             } catch (e: Exception) {
                 Timber.e(e, "Error al editar pregunta")
                 estado = estado.copy(error = "Error al editar pregunta.")
@@ -155,19 +196,18 @@ class PreguntasViewModel(
     }
 
     fun eliminarPregunta(id: Int) {
-        val plazaId = estado.plazaId ?: return
         viewModelScope.launch {
             try {
                 repository.eliminarPregunta(id)
                 estado = estado.copy(operacionExitosa = true)
-                cargarPreguntas(plazaId)
+                recargarListaActual()
             } catch (e: Exception) {
                 Timber.e(e, "Error al eliminar pregunta")
                 estado = estado.copy(error = "Error al eliminar pregunta.")
             }
         }
     }
-    
+
     fun resetOperacionExitosa() {
         estado = estado.copy(operacionExitosa = false)
     }

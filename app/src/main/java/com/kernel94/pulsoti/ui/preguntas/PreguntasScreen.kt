@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.kernel94.pulsoti.data.local.entities.PreguntaEntity
-import com.kernel94.pulsoti.ui.components.EnlaceCompartible
 import com.kernel94.pulsoti.ui.components.LoadingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +30,7 @@ fun PreguntasScreen(
     val estado = viewModel.estado
     val context = LocalContext.current
     var mostrarDialogo by remember { mutableStateOf(false) }
-    var preguntaAEditar by remember { mutableStateOf<PreguntaEntity?>(null) }
+    var preguntaAEditar by remember { mutableStateOf<PreguntaUi?>(null) }
 
     // Enlace publico de la encuesta de oficina (formulario web, sin
     // login) -- se contesta ahi para las areas administrativas, en vez
@@ -47,7 +45,7 @@ fun PreguntasScreen(
             viewModel.refrescar()
         }
     }
-    
+
     LaunchedEffect(estado.cargandoPreguntas) {
         if (!estado.cargandoPreguntas) {
             // pullToRefreshState.endRefresh()
@@ -77,7 +75,8 @@ fun PreguntasScreen(
             )
         },
         floatingActionButton = {
-            if (estado.plazaId != null) {
+            val puedeAgregar = if (estado.ambito == "oficina") true else estado.plazaId != null
+            if (puedeAgregar) {
                 FloatingActionButton(onClick = {
                     preguntaAEditar = null
                     mostrarDialogo = true
@@ -89,89 +88,114 @@ fun PreguntasScreen(
     ) { padding ->
         LoadingOverlay(mostrar = estado.cargandoPreguntas || estado.cargandoCatalogo)
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .nestedScroll(pullToRefreshState.nestedScrollConnection)
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            TabRow(selectedTabIndex = if (estado.ambito == "oficina") 1 else 0) {
+                Tab(
+                    selected = estado.ambito == "tiendas",
+                    onClick = { viewModel.cambiarAmbito("tiendas") },
+                    text = { Text("Tiendas") },
+                )
+                Tab(
+                    selected = estado.ambito == "oficina",
+                    onClick = { viewModel.cambiarAmbito("oficina") },
+                    text = { Text("Oficina") },
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(pullToRefreshState.nestedScrollConnection)
             ) {
-                item {
-                    EnlaceCompartible(
-                        titulo = "Encuesta de oficina (formulario web)",
-                        url = enlaceOficina,
-                    )
-                }
-
-                if (!estado.plazaFija) {
-                    item {
-                        SelectorUbicacion(
-                            estado = estado,
-                            onNegocio = viewModel::onNegocioSeleccionado,
-                            onRegion = viewModel::onRegionSeleccionada,
-                            onPlaza = viewModel::onPlazaSeleccionada
-                        )
-                    }
-                } else {
-                    item {
-                        Text(
-                            text = "Preguntas de la plaza asignada",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                if (estado.cargandoPreguntas && !pullToRefreshState.isRefreshing) {
-                    item {
-                        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                } else if (estado.plazaId != null) {
-                    if (estado.preguntas.isEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (estado.ambito == "oficina") {
                         item {
-                            Text("No hay preguntas en esta plaza.", modifier = Modifier.padding(16.dp))
+                            com.kernel94.pulsoti.ui.components.EnlaceCompartible(
+                                titulo = "Encuesta de oficina (formulario web)",
+                                url = enlaceOficina,
+                            )
+                        }
+                        item {
+                            Text(
+                                text = "Preguntas de la encuesta de oficina (una sola lista, para todas las áreas)",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else if (!estado.plazaFija) {
+                        item {
+                            SelectorUbicacion(
+                                estado = estado,
+                                onNegocio = viewModel::onNegocioSeleccionado,
+                                onRegion = viewModel::onRegionSeleccionada,
+                                onPlaza = viewModel::onPlazaSeleccionada
+                            )
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = "Preguntas de la plaza asignada",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                    items(estado.preguntas) { pregunta ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(pregunta.texto, style = MaterialTheme.typography.bodyLarge)
-                                    Text("Orden: ${pregunta.orden}", style = MaterialTheme.typography.labelMedium)
-                                }
-                                IconButton(onClick = {
-                                    preguntaAEditar = pregunta
-                                    mostrarDialogo = true
-                                }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
-                                }
-                                IconButton(onClick = {
-                                    viewModel.eliminarPregunta(pregunta.id)
-                                }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+
+                    if (estado.cargandoPreguntas && !pullToRefreshState.isRefreshing) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    } else if (estado.ambito == "oficina" || estado.plazaId != null) {
+                        if (estado.preguntas.isEmpty()) {
+                            item {
+                                Text(
+                                    if (estado.ambito == "oficina") "No hay preguntas en la encuesta de oficina."
+                                    else "No hay preguntas en esta plaza.",
+                                    modifier = Modifier.padding(16.dp),
+                                )
+                            }
+                        }
+                        items(estado.preguntas, key = { it.id }) { pregunta ->
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(pregunta.texto, style = MaterialTheme.typography.bodyLarge)
+                                        Text("Orden: ${pregunta.orden}", style = MaterialTheme.typography.labelMedium)
+                                    }
+                                    IconButton(onClick = {
+                                        preguntaAEditar = pregunta
+                                        mostrarDialogo = true
+                                    }) {
+                                        Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                                    }
+                                    IconButton(onClick = {
+                                        viewModel.eliminarPregunta(pregunta.id)
+                                    }) {
+                                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+                                    }
                                 }
                             }
                         }
-                    }
-                } else {
-                    item {
-                        Text("Selecciona una plaza para ver sus preguntas.", modifier = Modifier.padding(16.dp))
+                    } else {
+                        item {
+                            Text("Selecciona una plaza para ver sus preguntas.", modifier = Modifier.padding(16.dp))
+                        }
                     }
                 }
+
+                PullToRefreshContainer(
+                    state = pullToRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
-            
-            PullToRefreshContainer(
-                state = pullToRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
         }
 
         if (mostrarDialogo) {
@@ -193,7 +217,7 @@ fun PreguntasScreen(
 
 @Composable
 fun PreguntaDialog(
-    pregunta: PreguntaEntity?,
+    pregunta: PreguntaUi?,
     onDismiss: () -> Unit,
     onConfirm: (String, Int) -> Unit
 ) {

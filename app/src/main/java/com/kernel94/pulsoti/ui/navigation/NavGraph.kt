@@ -44,6 +44,8 @@ import com.kernel94.pulsoti.ui.areas.AreasScreen
 import com.kernel94.pulsoti.ui.areas.AreasViewModel
 import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaScreen
 import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaViewModel
+import com.kernel94.pulsoti.ui.resumen.ResumenScreen
+import com.kernel94.pulsoti.ui.resumen.ResumenViewModel
 import com.kernel94.pulsoti.ui.tiendas.TiendasScreen
 import com.kernel94.pulsoti.ui.tiendas.TiendasViewModel
 import com.kernel94.pulsoti.ui.dashboard.DashboardScreen
@@ -71,6 +73,7 @@ object Rutas {
     const val PREGUNTAS = "preguntas"
     const val AREAS = "areas"
     const val ENCUESTA_OFICINA = "encuesta_oficina"
+    const val RESUMEN = "resumen"
     const val TIENDAS = "tiendas"
     const val DASHBOARD = "dashboard"
     const val RESPUESTAS = "respuestas"
@@ -300,6 +303,20 @@ fun NavGraph(container: AppContainer) {
             }
         }
 
+        composable(Rutas.RESUMEN) {
+            val sesion = sesionState
+            if (sesion != null) {
+                ConDrawer(navController, sesion, container, BuildConfig.API_BASE_URL) { abrirMenu ->
+                    val factory = AppViewModelFactory(container, sesion)
+                    val viewModel = viewModel { factory.create(ResumenViewModel::class.java) }
+                    ResumenScreen(
+                        viewModel = viewModel,
+                        onAbrirMenu = abrirMenu,
+                    )
+                }
+            }
+        }
+
         composable(Rutas.PFS) {
             val sesion = sesionState
             if (sesion != null) {
@@ -497,6 +514,15 @@ private fun ConDrawer(
                         selected = false,
                         icon = { Icon(Icons.Filled.Business, contentDescription = null) },
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.AREAS) },
+                    )
+                }
+
+                if (sesion.rol == "WEBMASTER") {
+                    NavigationDrawerItem(
+                        label = { Text("Resumen del sistema") },
+                        selected = false,
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.RESUMEN) },
                     )
                 }
 

@@ -11,6 +11,7 @@ import com.kernel94.pulsoti.ui.login.LoginViewModel
 import com.kernel94.pulsoti.ui.preguntas.PreguntasViewModel
 import com.kernel94.pulsoti.ui.areas.AreasViewModel
 import com.kernel94.pulsoti.ui.encuestaoficina.EncuestaOficinaViewModel
+import com.kernel94.pulsoti.ui.resumen.ResumenViewModel
 import com.kernel94.pulsoti.ui.usuarios.UsuariosViewModel
 import com.kernel94.pulsoti.ui.tiendas.TiendasViewModel
 import com.kernel94.pulsoti.ui.perfil.PerfilViewModel
@@ -71,6 +72,9 @@ class AppViewModelFactory(
             DashboardViewModel::class.java -> {
                 requireNotNull(sesion)
                 DashboardViewModel(container.dashboardRepository, sesion) as T
+            }
+            ResumenViewModel::class.java -> {
+                ResumenViewModel(container.dashboardRepository) as T
             }
             SoporteViewModel::class.java -> {
                 requireNotNull(sesion)

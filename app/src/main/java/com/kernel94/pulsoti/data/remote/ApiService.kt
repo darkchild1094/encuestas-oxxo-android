@@ -188,6 +188,19 @@ interface ApiService : ApiServiceSync {
         @Query("hasta") hasta: String? = null
     ): List<PromedioPreguntaDto>
 
+    // Promedio por area administrativa (encuesta de oficina, sin
+    // alcance de plaza -- las areas son globales).
+    @GET("estadisticas/oficina")
+    suspend fun estadisticasOficina(
+        @Header("Authorization") token: String,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): List<PromedioPreguntaDto>
+
+    // "Resumen del sistema" para WEBMASTER.
+    @GET("estadisticas/resumen")
+    suspend fun estadisticasResumen(@Header("Authorization") token: String): ResumenSistemaDto
+
     // --- Soporte / Reportar Bug ---
     @GET("soporte/mis-tickets")
     suspend fun misTickets(@Header("Authorization") token: String): List<TicketSoporteDto>

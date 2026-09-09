@@ -3,6 +3,7 @@ package com.kernel94.pulsoti.data.repository
 import com.kernel94.pulsoti.data.SessionManager
 import com.kernel94.pulsoti.data.remote.ApiService
 import com.kernel94.pulsoti.data.remote.dto.PromedioPreguntaDto
+import com.kernel94.pulsoti.data.remote.dto.ResumenSistemaDto
 import timber.log.Timber
 
 class DashboardRepository(
@@ -45,5 +46,18 @@ class DashboardRepository(
         api.estadisticasPfsIndividual(token(), plazaId, desde, hasta)
     } catch (e: Exception) {
         emptyList()
+    }
+
+    suspend fun obtenerEstadisticasOficina(desde: String?, hasta: String?): List<PromedioPreguntaDto> = try {
+        api.estadisticasOficina(token(), desde, hasta)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    suspend fun obtenerResumenSistema(): ResumenSistemaDto? = try {
+        api.estadisticasResumen(token())
+    } catch (e: Exception) {
+        Timber.e(e, "Error obteniendo resumen del sistema")
+        null
     }
 }
