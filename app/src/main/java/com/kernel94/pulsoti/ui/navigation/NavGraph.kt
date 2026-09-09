@@ -131,8 +131,13 @@ fun NavGraph(container: AppContainer) {
         sesionState == null -> Rutas.LOGIN
         !sesionState!!.syncRealizado -> Rutas.SYNC
         sesionState!!.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
+        // Para todos los roles menos PFS, la pantalla principal es su
+        // dashboard (ATI -> Dashboard, WEBMASTER -> Resumen). PFS no
+        // tiene dashboard: su pantalla principal sigue siendo la
+        // encuesta (esEncuestable).
+        sesionState!!.rol == "ATI" -> Rutas.DASHBOARD
+        sesionState!!.rol == "WEBMASTER" -> Rutas.RESUMEN
         sesionState!!.esEncuestable -> Rutas.ENCUESTA
-        sesionState!!.rol == "WEBMASTER" -> Rutas.USUARIOS
         else -> Rutas.HISTORIAL
     }
 
@@ -149,7 +154,7 @@ fun NavGraph(container: AppContainer) {
                     } else {
                         val destino = when (rol) {
                             "ATI" -> Rutas.DASHBOARD
-                            "WEBMASTER" -> Rutas.USUARIOS
+                            "WEBMASTER" -> Rutas.RESUMEN
                             else -> Rutas.ENCUESTA
                         }
                         navController.navigate(destino) { popUpTo(Rutas.LOGIN) { inclusive = true } }
@@ -175,8 +180,8 @@ fun NavGraph(container: AppContainer) {
                     val destino = when {
                         sesion.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
                         sesion.rol == "ATI" -> Rutas.DASHBOARD
+                        sesion.rol == "WEBMASTER" -> Rutas.RESUMEN
                         sesion.esEncuestable -> Rutas.ENCUESTA
-                        sesion.rol == "WEBMASTER" -> Rutas.USUARIOS
                         else -> Rutas.HISTORIAL
                     }
                     navController.navigate(destino) { popUpTo(Rutas.SYNC) { inclusive = true } }

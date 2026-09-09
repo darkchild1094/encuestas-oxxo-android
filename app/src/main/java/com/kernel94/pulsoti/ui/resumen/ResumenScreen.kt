@@ -1,14 +1,11 @@
 package com.kernel94.pulsoti.ui.resumen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationCity
@@ -27,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,8 +32,12 @@ import com.kernel94.pulsoti.data.remote.dto.ConteosResumenDto
 import com.kernel94.pulsoti.data.remote.dto.EncuestaRecienteDto
 import com.kernel94.pulsoti.data.remote.dto.ResumenSistemaDto
 import com.kernel94.pulsoti.data.remote.dto.UsuariosPorRolDto
+import com.kernel94.pulsoti.ui.components.KpiChip
 import com.kernel94.pulsoti.ui.components.LoadingOverlay
+import com.kernel94.pulsoti.ui.components.SeccionCompacta
 
+// "Resumen del sistema" para WEBMASTER: version compacta (una fila
+// delgada por dato), pensada para caber sin scroll interminable.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResumenScreen(
@@ -90,27 +90,23 @@ fun ResumenScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item { ConteosGrid(datos.conteos, datos.tokens_activos) }
-                    item { EncuestasResumenCard(datos.conteos) }
+                    item { EncuestasResumenLinea(datos.conteos) }
 
-                    item {
-                        SeccionHeader("Usuarios por rol", Icons.Filled.People, Color(0xFF2E86AB))
-                    }
+                    item { SeccionCompacta("Usuarios por rol", Icons.Filled.People, Color(0xFF2E86AB), 0) }
                     items(datos.usuarios_por_rol, key = { it.rol }) { fila ->
                         UsuariosPorRolRow(fila, maxTotal = datos.usuarios_por_rol.maxOfOrNull { it.total } ?: 1)
                     }
 
-                    item {
-                        SeccionHeader("Actividad reciente", Icons.Filled.History, Color(0xFF5A5F63))
-                    }
+                    item { SeccionCompacta("Actividad reciente", Icons.Filled.History, Color(0xFF5A5F63), 0) }
                     if (datos.ultimas_encuestas.isEmpty()) {
                         item {
                             Text(
                                 "Todavía no hay encuestas registradas.",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -118,10 +114,8 @@ fun ResumenScreen(
                         items(datos.ultimas_encuestas, key = { it.fecha + it.lugar }) { fila -> ActividadRow(fila) }
                     }
 
-                    item {
-                        VersionAppCard(datos)
-                    }
-                    item { Spacer(Modifier.height(8.dp)) }
+                    item { VersionAppLinea(datos) }
+                    item { Spacer(Modifier.height(4.dp)) }
                 }
             }
 
@@ -132,148 +126,106 @@ fun ResumenScreen(
 
 @Composable
 private fun ConteosGrid(conteos: ConteosResumenDto, tokensActivos: Int?) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiTile(Modifier.weight(1f), Icons.Filled.People, Color(0xFF2E86AB), conteos.usuarios.toString(), "Usuarios")
-            KpiTile(Modifier.weight(1f), Icons.Filled.Store, Color(0xFFD71921), conteos.tiendas.toString(), "Tiendas")
-            KpiTile(Modifier.weight(1f), Icons.Filled.LocationCity, Color(0xFFFFC72C), conteos.plazas.toString(), "Plazas")
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            KpiChip(Icons.Filled.People, Color(0xFF2E86AB), conteos.usuarios.toString(), "Usuarios", Modifier.weight(1f))
+            KpiChip(Icons.Filled.Store, Color(0xFFD71921), conteos.tiendas.toString(), "Tiendas", Modifier.weight(1f))
+            KpiChip(Icons.Filled.LocationCity, Color(0xFFB8860B), conteos.plazas.toString(), "Plazas", Modifier.weight(1f))
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiTile(Modifier.weight(1f), Icons.Filled.Business, Color(0xFF6BAA75), conteos.areas.toString(), "Áreas")
-            KpiTile(Modifier.weight(1f), Icons.Filled.Key, Color(0xFF9C27B0), tokensActivos?.toString() ?: "n/d", "Sesiones activas")
-            KpiTile(Modifier.weight(1f), Icons.Filled.LockReset, Color(0xFFFF7043), conteos.pendientes_password.toString(), "Pass. pendiente")
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            KpiChip(Icons.Filled.Business, Color(0xFF3AAE7A), conteos.areas.toString(), "Áreas", Modifier.weight(1f))
+            KpiChip(Icons.Filled.Key, Color(0xFF7B5EA7), tokensActivos?.toString() ?: "n/d", "Sesiones", Modifier.weight(1f))
+            KpiChip(Icons.Filled.LockReset, Color(0xFFC66A2E), conteos.pendientes_password.toString(), "Pass. pend.", Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun KpiTile(modifier: Modifier, icono: ImageVector, color: Color, valor: String, etiqueta: String) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.12f)),
+private fun EncuestasResumenLinea(conteos: ConteosResumenDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(icono, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.height(6.dp))
-            Text(valor, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = color)
-            Text(
-                etiqueta,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-            )
-        }
-    }
-}
-
-@Composable
-private fun EncuestasResumenCard(conteos: ConteosResumenDto) {
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                Text("Encuestas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                DatoLinea("Total", conteos.encuestas.toString())
-                DatoLinea("Tienda", conteos.encuestas_tienda.toString())
-                DatoLinea("Oficina", conteos.encuestas_oficina.toString())
-            }
-            HorizontalDivider()
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                DatoLinea("Últimos 7 días", conteos.encuestas_7d.toString())
-                DatoLinea("Últimos 30 días", conteos.encuestas_30d.toString())
-            }
-        }
+        DatoLinea("Total", conteos.encuestas.toString())
+        DatoLinea("Tienda", conteos.encuestas_tienda.toString())
+        DatoLinea("Oficina", conteos.encuestas_oficina.toString())
+        DatoLinea("7 días", conteos.encuestas_7d.toString())
+        DatoLinea("30 días", conteos.encuestas_30d.toString())
     }
 }
 
 @Composable
 private fun DatoLinea(etiqueta: String, valor: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(valor, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(valor, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
         Text(etiqueta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun SeccionHeader(titulo: String, icono: ImageVector, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(
-            modifier = Modifier.size(32.dp).clip(CircleShape).background(color.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icono, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        }
-        Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
 private fun UsuariosPorRolRow(fila: UsuariosPorRolDto, maxTotal: Int) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(fila.rol, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                Text("${fila.total}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(6.dp))
-            LinearProgressIndicator(
-                progress = { if (maxTotal == 0) 0f else fila.total.toFloat() / maxTotal },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-            )
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(fila.rol, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(96.dp))
+        LinearProgressIndicator(
+            progress = { if (maxTotal == 0) 0f else fila.total.toFloat() / maxTotal },
+            modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+        )
+        Text("${fila.total}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun ActividadRow(fila: EncuestaRecienteDto) {
     val esOficina = fila.tipo == "oficina"
-    val color = if (esOficina) Color(0xFF6BAA75) else Color(0xFFD71921)
+    val color = if (esOficina) Color(0xFF3AAE7A) else Color(0xFFD71921)
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
             if (esOficina) Icons.Filled.Business else Icons.Filled.Store,
             contentDescription = null,
             tint = color,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(14.dp),
         )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(fila.lugar, style = MaterialTheme.typography.bodyMedium)
-            Text(fila.fecha, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        AssistChip(onClick = {}, enabled = false, label = { Text(if (esOficina) "Oficina" else "Tienda") })
+        Text(
+            fila.lugar,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            fila.fecha.substringBefore(" "),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
-private fun VersionAppCard(datos: ResumenSistemaDto) {
+private fun VersionAppLinea(datos: ResumenSistemaDto) {
     val v = datos.version_app
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Filled.SystemUpdate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                Text("App publicada", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            if (v?.version_name != null) {
-                Text("Versión ${v.version_name} (code ${v.version_code ?: "?"})", style = MaterialTheme.typography.bodyMedium)
-                if (v.obligatoria == true) {
-                    AssistChip(onClick = {}, enabled = false, label = { Text("Actualización obligatoria") })
-                }
-                if (!v.novedades.isNullOrBlank()) {
-                    Text(v.novedades, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                Text("Sin información de versión publicada.", style = MaterialTheme.typography.bodySmall)
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(Icons.Filled.SystemUpdate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+        if (v?.version_name != null) {
+            Text(
+                "App publicada: v${v.version_name} (code ${v.version_code ?: "?"})" +
+                    if (v.obligatoria == true) " · obligatoria" else "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text("Sin información de versión publicada.", style = MaterialTheme.typography.labelSmall)
         }
     }
 }
