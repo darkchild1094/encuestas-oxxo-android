@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -31,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -100,22 +104,28 @@ fun EncuestaOficinaScreen(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    item {
-                        Text(
-                            text = "Hola ${sesion.nombreCompleto}, selecciona el área que estás encuestando:",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                    item {
-                        SelectorArea(
-                            areas = estado.areas,
-                            seleccionId = estado.areaId,
-                            onSeleccionar = viewModel::onAreaSeleccionada,
-                        )
-                    }
-
-                    if (estado.areaId != null) {
+                    if (estado.areaId == null) {
+                        item {
+                            Text(
+                                text = "Hola ${sesion.nombreCompleto}, selecciona el área que estás encuestando:",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        item {
+                            SelectorArea(
+                                areas = estado.areas,
+                                seleccionId = estado.areaId,
+                                onSeleccionar = viewModel::onAreaSeleccionada,
+                            )
+                        }
+                    } else {
+                        item {
+                            HeaderArea(
+                                nombreArea = estado.areaSeleccionada?.nombre.orEmpty(),
+                                onCambiarArea = { viewModel.cambiarArea() },
+                            )
+                        }
                         item {
                             SaludoAtiOficina(sesion = sesion, apiBaseUrl = apiBaseUrl)
                         }
@@ -203,6 +213,52 @@ private fun SelectorArea(
                     onClick = { onSeleccionar(area.id); expandido = false },
                 )
             }
+        }
+    }
+}
+
+// Mismo comportamiento que HeaderTienda en EncuestaScreen.kt: al elegir
+// area, el selector se oculta y en su lugar sale este encabezado con
+// boton "CAMBIAR" para volver a elegir.
+@Composable
+private fun HeaderArea(
+    nombreArea: String,
+    onCambiarArea: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            Icons.Filled.Business,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(40.dp),
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = nombreArea.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "ENCUESTA DE OFICINA",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        TextButton(
+            onClick = onCambiarArea,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text("CAMBIAR", style = MaterialTheme.typography.labelSmall)
         }
     }
 }

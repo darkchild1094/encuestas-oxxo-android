@@ -80,6 +80,19 @@ class EncuestaOficinaViewModel(
         estado = estado.copy(areaId = id, areaSeleccionada = area)
     }
 
+    // "CAMBIAR" en el encabezado, una vez ya elegida el area -- mismo
+    // comportamiento que onTiendaSeleccionada(-1) en la encuesta de
+    // tienda: vuelve a mostrar el selector y limpia lo que ya se habia
+    // calificado (las preguntas/cuestionario no cambian, son globales).
+    fun cambiarArea() {
+        estado = estado.copy(
+            areaId = null,
+            areaSeleccionada = null,
+            calificaciones = emptyMap(),
+            comentario = "",
+        )
+    }
+
     fun onCalificar(preguntaId: Int, calificacion: Int) {
         estado = estado.copy(calificaciones = estado.calificaciones + (preguntaId to calificacion))
     }
