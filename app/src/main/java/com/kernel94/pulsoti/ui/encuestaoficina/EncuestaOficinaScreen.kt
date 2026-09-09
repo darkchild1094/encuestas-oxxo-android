@@ -1,6 +1,7 @@
 package com.kernel94.pulsoti.ui.encuestaoficina
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,14 +46,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.kernel94.pulsoti.R
 import com.kernel94.pulsoti.data.Sesion
 import com.kernel94.pulsoti.ui.components.LoadingOverlay
 import com.kernel94.pulsoti.ui.encuesta.NpsFaceSelector
+import com.kernel94.pulsoti.ui.encuesta.NpsFlyingFaces
 
 private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
     if (rutaFoto.isNullOrBlank()) return null
@@ -97,6 +102,7 @@ fun EncuestaOficinaScreen(
             if (estado.enviadoOk) {
                 PantallaAgradecimientoOficina(
                     areaNombre = estado.areaSeleccionada?.nombre.orEmpty(),
+                    ultimoId = estado.ultimoIdGenerado,
                     onCerrar = { viewModel.reiniciarParaNuevaEncuesta() },
                 )
             } else {
@@ -179,6 +185,15 @@ fun EncuestaOficinaScreen(
 
                     item { Spacer(Modifier.height(24.dp)) }
                 }
+            }
+
+            // Caritas volando: en la seleccion de area (igual que la
+            // encuesta de tienda) y tambien al terminar, aqui a peticion
+            // explicita (en tienda solo sale antes de elegir).
+            if (estado.areaId == null || estado.enviadoOk) {
+                NpsFlyingFaces(
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(200.dp)
+                )
             }
         }
     }
@@ -323,6 +338,7 @@ private fun AvatarCircular(fotoUrl: String?, size: Dp) {
 @Composable
 private fun PantallaAgradecimientoOficina(
     areaNombre: String,
+    ultimoId: String,
     onCerrar: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -330,22 +346,42 @@ private fun PantallaAgradecimientoOficina(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Image(
+                painter = painterResource(R.drawable.logo_oxxo),
+                contentDescription = "Logo OXXO",
+                modifier = Modifier.size(width = 180.dp, height = 96.dp),
+                contentScale = ContentScale.Fit,
+            )
+
             Text(
-                text = "¡Gracias por tu evaluación!",
+                text = "Tu respuesta ha sido guardada con éxito",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
             )
             if (areaNombre.isNotBlank()) {
-                Text(text = areaNombre, style = MaterialTheme.typography.titleLarge)
+                Text(text = areaNombre, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
             }
             Text(
-                text = "Tu respuesta sobre la encuesta de oficina quedó registrada.",
+                text = "Gracias por tu evaluación sobre la encuesta de oficina.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(16.dp))
+
+            Spacer(Modifier.height(24.dp))
             Button(onClick = onCerrar, modifier = Modifier.fillMaxWidth()) {
                 Text("Contestar otra")
+            }
+
+            if (ultimoId.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "ID del registro: $ultimoId",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
