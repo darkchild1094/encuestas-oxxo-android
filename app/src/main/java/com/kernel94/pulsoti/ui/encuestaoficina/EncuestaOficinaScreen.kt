@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -25,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,18 +40,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.kernel94.pulsoti.data.Sesion
 import com.kernel94.pulsoti.ui.components.LoadingOverlay
 import com.kernel94.pulsoti.ui.encuesta.NpsFaceSelector
+
+private fun urlFoto(rutaFoto: String?, apiBaseUrl: String): String? {
+    if (rutaFoto.isNullOrBlank()) return null
+    if (rutaFoto.startsWith("http")) return rutaFoto
+    val base = apiBaseUrl.trimEnd('/').removeSuffix("/api").trimEnd('/')
+    return "$base/$rutaFoto"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EncuestaOficinaScreen(
     viewModel: EncuestaOficinaViewModel,
     sesion: Sesion,
+    apiBaseUrl: String,
     onAbrirMenu: () -> Unit,
 ) {
     val estado = viewModel.estado
@@ -101,11 +117,7 @@ fun EncuestaOficinaScreen(
 
                     if (estado.areaId != null) {
                         item {
-                            Text(
-                                text = "Asesor TI: ${sesion.nombreCompleto}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                            )
+                            SaludoAtiOficina(sesion = sesion, apiBaseUrl = apiBaseUrl)
                         }
 
                         items(estado.preguntas, key = { it.id }) { pregunta ->
@@ -189,6 +201,63 @@ private fun SelectorArea(
                 DropdownMenuItem(
                     text = { Text(area.nombre) },
                     onClick = { onSeleccionar(area.id); expandido = false },
+                )
+            }
+        }
+    }
+}
+
+// Mismo encabezado que la encuesta de tienda (SaludoAti en
+// EncuestaScreen.kt): tarjeta con foto + "Hola, soy <nombre>...". Ahi
+// el saludo viene del ATI asignado a la tienda; aqui el que responde
+// la encuesta de oficina ES el ATI, asi que sale de la sesion.
+@Composable
+private fun SaludoAtiOficina(sesion: Sesion, apiBaseUrl: String) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            AvatarCircular(urlFoto(sesion.fotoPerfil, apiBaseUrl), size = 72.dp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                val labelAsesor = when {
+                    sesion.genero == "H" -> "Asesor"
+                    sesion.genero == "M" -> "Asesora"
+                    sesion.nombreCompleto.trim().endsWith("a", ignoreCase = true) -> "Asesora"
+                    else -> "Asesor"
+                }
+                Text(
+                    text = "¡Hola! Soy ${sesion.nombreCompleto}, tu $labelAsesor de TI y estoy para apoyarte con la encuesta de oficina.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarCircular(fotoUrl: String?, size: Dp) {
+    Surface(
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shadowElevation = 1.dp,
+    ) {
+        if (fotoUrl != null) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(size / 2),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

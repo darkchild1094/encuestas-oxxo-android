@@ -273,6 +273,7 @@ fun NavGraph(container: AppContainer) {
                     EncuestaOficinaScreen(
                         viewModel = viewModel,
                         sesion = sesion,
+                        apiBaseUrl = BuildConfig.API_BASE_URL,
                         onAbrirMenu = abrirMenu,
                     )
                 }
