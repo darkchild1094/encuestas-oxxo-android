@@ -128,11 +128,6 @@ fun NavGraph(container: AppContainer) {
         sesionState == null -> Rutas.LOGIN
         !sesionState!!.syncRealizado -> Rutas.SYNC
         sesionState!!.debeCambiarPassword -> Rutas.CHANGE_PASSWORD
-        // ATI ahora tambien es_encuestable (puede contestar la encuesta
-        // de tienda, como PFS), pero su pantalla de inicio sigue siendo
-        // el Dashboard -- mismo criterio que ya usan SyncScreen.onTerminado
-        // y LoginScreen.onLoginExitoso, aqui les faltaba este caso.
-        sesionState!!.rol == "ATI" -> Rutas.DASHBOARD
         sesionState!!.esEncuestable -> Rutas.ENCUESTA
         sesionState!!.rol == "WEBMASTER" -> Rutas.USUARIOS
         else -> Rutas.HISTORIAL
