@@ -188,11 +188,12 @@ interface ApiService : ApiServiceSync {
         @Query("hasta") hasta: String? = null
     ): List<PromedioPreguntaDto>
 
-    // Promedio por area administrativa (encuesta de oficina, sin
-    // alcance de plaza -- las areas son globales).
+    // Promedio de la encuesta de oficina agrupado por area (default),
+    // por ATI que la contesto, o por la plaza de ese ATI. Global.
     @GET("estadisticas/oficina")
     suspend fun estadisticasOficina(
         @Header("Authorization") token: String,
+        @Query("por") por: String? = null, // "area" | "ati" | "plaza"
         @Query("desde") desde: String? = null,
         @Query("hasta") hasta: String? = null
     ): List<PromedioPreguntaDto>

@@ -48,8 +48,8 @@ class DashboardRepository(
         emptyList()
     }
 
-    suspend fun obtenerEstadisticasOficina(desde: String?, hasta: String?): List<PromedioPreguntaDto> = try {
-        api.estadisticasOficina(token(), desde, hasta)
+    suspend fun obtenerEstadisticasOficina(por: String, desde: String?, hasta: String?): List<PromedioPreguntaDto> = try {
+        api.estadisticasOficina(token(), por, desde, hasta)
     } catch (e: Exception) {
         emptyList()
     }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kernel94.pulsoti.data.remote.dto.PromedioPreguntaDto
@@ -158,7 +159,18 @@ fun DashboardScreen(
                     seccionRanking("Tiendas de tu plaza", Icons.Filled.Store, Color(0xFFD71921), state.tiendasPlaza)
                     seccionRanking("ATIs de tu región", Icons.Filled.LocationCity, Color(0xFF5A5F63), state.atisRegion)
                     seccionRanking("Desempeño PFS", Icons.Filled.SupportAgent, Color(0xFFB8860B), state.pfsDesempeno)
-                    seccionRanking("Encuesta de oficina", Icons.Filled.Business, Color(0xFF3AAE7A), state.oficina)
+
+                    item {
+                        Text(
+                            "Encuesta de oficina",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                    seccionRanking("Oficina · por área", Icons.Filled.Business, Color(0xFF3AAE7A), state.oficinaArea)
+                    seccionRanking("Oficina · por ATI", Icons.Filled.Groups, Color(0xFF2E86AB), state.oficinaAti)
+                    seccionRanking("Oficina · por plaza", Icons.Filled.LocationCity, Color(0xFF5A5F63), state.oficinaPlaza)
 
                     item { Spacer(Modifier.height(4.dp)) }
                 }

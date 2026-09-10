@@ -20,7 +20,9 @@ data class DashboardUiState(
     val tiendasPlaza: List<PromedioPreguntaDto> = emptyList(),
     val atisRegion: List<PromedioPreguntaDto> = emptyList(),
     val pfsDesempeno: List<PromedioPreguntaDto> = emptyList(),
-    val oficina: List<PromedioPreguntaDto> = emptyList(),
+    val oficinaArea: List<PromedioPreguntaDto> = emptyList(),
+    val oficinaAti: List<PromedioPreguntaDto> = emptyList(),
+    val oficinaPlaza: List<PromedioPreguntaDto> = emptyList(),
 ) {
     // KPIs derivados de "tiendas de la plaza" -- es el dato mas cercano
     // a "como esta el servicio de TI en mi plaza ahorita".
@@ -33,7 +35,8 @@ data class DashboardUiState(
     val encuestasTotales: Int get() = tiendasPlaza.sumOf { it.total_encuestas }
     val huboDatos: Boolean get() =
         atisPlaza.isNotEmpty() || tiendasPlaza.isNotEmpty() || atisRegion.isNotEmpty() ||
-            pfsDesempeno.isNotEmpty() || oficina.isNotEmpty()
+            pfsDesempeno.isNotEmpty() || oficinaArea.isNotEmpty() || oficinaAti.isNotEmpty() ||
+            oficinaPlaza.isNotEmpty()
 }
 
 // Dashboard de ATI: una sola pantalla con todas las secciones (antes
@@ -63,13 +66,15 @@ class DashboardViewModel(
             val desde = state.desde
             val hasta = state.hasta
 
-            // Las 5 secciones se piden en paralelo -- son consultas
-            // independientes, esperar una por una tardaria 5x mas.
+            // Todas las secciones se piden en paralelo -- son consultas
+            // independientes, esperar una por una tardaria mucho mas.
             val atisPlazaDef = async { repository.obtenerEstadisticasPlazaAtis(plazaId, desde, hasta) }
             val tiendasPlazaDef = async { repository.obtenerEstadisticasPlazaTiendas(plazaId, desde, hasta) }
             val atisRegionDef = async { repository.obtenerEstadisticasRegionAtis(plazaId, desde, hasta) }
             val pfsDef = async { repository.obtenerEstadisticasPfsIndividual(plazaId, desde, hasta) }
-            val oficinaDef = async { repository.obtenerEstadisticasOficina(desde, hasta) }
+            val ofiAreaDef = async { repository.obtenerEstadisticasOficina("area", desde, hasta) }
+            val ofiAtiDef = async { repository.obtenerEstadisticasOficina("ati", desde, hasta) }
+            val ofiPlazaDef = async { repository.obtenerEstadisticasOficina("plaza", desde, hasta) }
 
             val nuevoEstado = state.copy(
                 cargando = false,
@@ -77,7 +82,9 @@ class DashboardViewModel(
                 tiendasPlaza = tiendasPlazaDef.await(),
                 atisRegion = atisRegionDef.await(),
                 pfsDesempeno = pfsDef.await(),
-                oficina = oficinaDef.await(),
+                oficinaArea = ofiAreaDef.await(),
+                oficinaAti = ofiAtiDef.await(),
+                oficinaPlaza = ofiPlazaDef.await(),
             )
             state = nuevoEstado.copy(
                 error = if (!nuevoEstado.huboDatos) "No se encontraron datos para este filtro." else null

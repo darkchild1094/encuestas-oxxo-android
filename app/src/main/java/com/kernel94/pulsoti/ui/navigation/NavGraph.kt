@@ -532,7 +532,11 @@ private fun ConDrawer(
                     )
                 }
 
-                if (sesion.esEncuestable) {
+                // Responder encuestas en la app: solo los roles que de
+                // verdad las contestan. La de tienda es del PFS; la de
+                // oficina es del ATI. El WEBMASTER no contesta encuestas
+                // desde la app (aunque el backend se lo permita).
+                if (sesion.rol == "PFS") {
                     NavigationDrawerItem(
                         label = { Text("Responder encuesta") },
                         selected = false,
@@ -540,7 +544,7 @@ private fun ConDrawer(
                         onClick = { scope.launch { drawerState.close() }; navController.navigate(Rutas.ENCUESTA) },
                     )
                 }
-                if (sesion.contestaOficina) {
+                if (sesion.rol == "ATI") {
                     NavigationDrawerItem(
                         label = { Text("Responder encuesta de oficina") },
                         selected = false,
